@@ -8,6 +8,9 @@ import com.fairswap.core.auth.AuthCallbackCoordinator
 import com.fairswap.core.network.BackendHealthRepository
 import com.fairswap.core.network.FairSwapBackendConfig
 import com.fairswap.core.network.SupabaseClientFactory
+import com.fairswap.core.discovery.DiscoveryDataSource
+import com.fairswap.core.discovery.DiscoveryRepository
+import com.fairswap.core.discovery.PublicMediaUrlBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,6 +23,17 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    @Provides
+    @Singleton
+    fun providePublicMediaUrlBuilder() = PublicMediaUrlBuilder(BuildConfig.FAIRSWAP_WEB_BASE_URL)
+
+    @Provides
+    @Singleton
+    fun provideDiscoveryDataSource(
+        supabase: SupabaseClient,
+        mediaUrls: PublicMediaUrlBuilder,
+    ): DiscoveryDataSource = DiscoveryRepository(supabase, mediaUrls)
+
     @Provides
     @Singleton
     fun provideAuthCallbackConfig() = AuthCallbackConfig(

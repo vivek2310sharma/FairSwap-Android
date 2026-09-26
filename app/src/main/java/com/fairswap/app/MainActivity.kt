@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FairSwapTheme {
-                FairSwapApp()
+                FairSwapApp(callbackCoordinator)
             }
         }
         handleAuthCallback(intent)

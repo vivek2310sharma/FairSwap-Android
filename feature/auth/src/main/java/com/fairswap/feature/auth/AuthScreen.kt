@@ -34,6 +34,7 @@ import com.fairswap.core.auth.SignUpInput
 @Composable
 fun AuthScreen(
     uiState: AuthUiState,
+    onBrowse: () -> Unit,
     onShowSignIn: () -> Unit,
     onShowSignUp: () -> Unit,
     onShowForgotPassword: () -> Unit,
@@ -55,6 +56,7 @@ fun AuthScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             Text("FairSwap", style = MaterialTheme.typography.headlineMedium)
+            OutlinedButton(onClick = onBrowse) { Text("Browse marketplace") }
             Text(
                 "FairSwap account",
                 style = MaterialTheme.typography.titleMedium,

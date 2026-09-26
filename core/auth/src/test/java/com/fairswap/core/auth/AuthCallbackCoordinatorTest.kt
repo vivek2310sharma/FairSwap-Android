@@ -5,6 +5,19 @@ import org.junit.Test
 
 class AuthCallbackCoordinatorTest {
     @Test
+    fun navigationRemainsPendingUntilUiHandlesCallback() {
+        val coordinator = AuthCallbackCoordinator()
+        val sequence = coordinator.begin()!!
+        coordinator.succeed(sequence, AuthCallbackKind.Confirmation)
+        coordinator.acknowledge(sequence)
+        assertEquals(sequence, coordinator.pendingNavigation.value)
+        coordinator.acknowledgeNavigation(sequence + 1)
+        assertEquals(sequence, coordinator.pendingNavigation.value)
+        coordinator.acknowledgeNavigation(sequence)
+        assertEquals(null, coordinator.pendingNavigation.value)
+    }
+
+    @Test
     fun staleCallbackCannotReplaceNewerResult() {
         val coordinator = AuthCallbackCoordinator()
         val first = coordinator.begin()!!

@@ -52,11 +52,16 @@ sealed interface AuthCallbackEvent {
 class AuthCallbackCoordinator {
     private val mutableEvents = MutableStateFlow<AuthCallbackEvent?>(null)
     val events: StateFlow<AuthCallbackEvent?> = mutableEvents
+    private val mutablePendingNavigation = MutableStateFlow<Long?>(null)
+    val pendingNavigation: StateFlow<Long?> = mutablePendingNavigation
     private var nextSequence = 0L
 
     fun begin(): Long? = synchronized(this) {
         if (mutableEvents.value is AuthCallbackEvent.Processing) return@synchronized null
-        (++nextSequence).also { mutableEvents.value = AuthCallbackEvent.Processing(it) }
+        (++nextSequence).also {
+            mutableEvents.value = AuthCallbackEvent.Processing(it)
+            mutablePendingNavigation.value = it
+        }
     }
 
     fun succeed(sequence: Long, kind: AuthCallbackKind, onAccepted: () -> Unit = {}): Boolean = synchronized(this) {
@@ -74,6 +79,10 @@ class AuthCallbackCoordinator {
 
     fun acknowledge(sequence: Long) = synchronized(this) {
         if (mutableEvents.value?.sequence == sequence) mutableEvents.value = null
+    }
+
+    fun acknowledgeNavigation(sequence: Long) = synchronized(this) {
+        if (mutablePendingNavigation.value == sequence) mutablePendingNavigation.value = null
     }
 }
 

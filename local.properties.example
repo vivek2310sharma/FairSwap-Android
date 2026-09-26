@@ -4,6 +4,8 @@
 sdk.dir=/path/to/Android/Sdk
 SUPABASE_STAGING_URL=https://wpppxlnbzqynvhpeuavd.supabase.co
 SUPABASE_STAGING_PUBLISHABLE_KEY=replace_with_staging_publishable_key
+# HTTPS origin of the FairSwapTest web app, used only for public listing thumbnails.
+FAIRSWAP_STAGING_WEB_BASE_URL=https://replace-with-staging-web-host.example
 
 SUPABASE_PRODUCTION_URL=
 SUPABASE_PRODUCTION_PUBLISHABLE_KEY=
