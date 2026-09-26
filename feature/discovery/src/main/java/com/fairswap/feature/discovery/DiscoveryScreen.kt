@@ -1,6 +1,7 @@
 package com.fairswap.feature.discovery
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ fun DiscoveryScreen(
     onLoadMore: () -> Unit,
     onRetryMetadata: () -> Unit,
     onAccount: () -> Unit,
+    onListingSelected: (String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -162,7 +164,9 @@ fun DiscoveryScreen(
         if (!state.loadingFirstPage && state.results.items.isEmpty() && state.results.error == null) {
             item { Text("No listings match these filters.") }
         }
-        items(state.results.items, key = { it.id }) { listing -> ListingCardView(listing) }
+        items(state.results.items, key = { it.id }) { listing ->
+            ListingCardView(listing, onClick = { onListingSelected(listing.id) })
+        }
         if (state.results.canLoadMore && state.results.errorKind != ResultErrorKind.NEXT_PAGE) item {
             Button(onClick = onLoadMore, enabled = !state.loadingMore && !state.loadingFirstPage) {
                 if (state.loadingMore) CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -199,8 +203,8 @@ private fun <T> Selector(
 }
 
 @Composable
-private fun ListingCardView(listing: ListingCard) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun ListingCardView(listing: ListingCard, onClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (listing.thumbnailUrl == null) {
                 PhotoPlaceholder()

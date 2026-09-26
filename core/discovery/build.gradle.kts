@@ -18,4 +18,5 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

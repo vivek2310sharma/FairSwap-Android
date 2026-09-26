@@ -11,6 +11,10 @@ import com.fairswap.core.network.SupabaseClientFactory
 import com.fairswap.core.discovery.DiscoveryDataSource
 import com.fairswap.core.discovery.DiscoveryRepository
 import com.fairswap.core.discovery.PublicMediaUrlBuilder
+import com.fairswap.core.discovery.PublicMarketplaceDataSource
+import com.fairswap.core.discovery.PublicMarketplaceGateway
+import com.fairswap.core.discovery.PublicMarketplaceRepository
+import com.fairswap.core.discovery.SupabasePublicMarketplaceGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,6 +37,18 @@ object AppModule {
         supabase: SupabaseClient,
         mediaUrls: PublicMediaUrlBuilder,
     ): DiscoveryDataSource = DiscoveryRepository(supabase, mediaUrls)
+
+    @Provides
+    @Singleton
+    fun providePublicMarketplaceGateway(supabase: SupabaseClient): PublicMarketplaceGateway =
+        SupabasePublicMarketplaceGateway(supabase)
+
+    @Provides
+    @Singleton
+    fun providePublicMarketplaceDataSource(
+        gateway: PublicMarketplaceGateway,
+        mediaUrls: PublicMediaUrlBuilder,
+    ): PublicMarketplaceDataSource = PublicMarketplaceRepository(gateway, mediaUrls)
 
     @Provides
     @Singleton
