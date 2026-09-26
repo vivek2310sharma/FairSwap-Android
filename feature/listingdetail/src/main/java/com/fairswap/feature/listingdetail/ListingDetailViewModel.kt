@@ -27,12 +27,19 @@ data class ListingDetailUiState(
 @HiltViewModel
 class ListingDetailViewModel @Inject constructor(
     private val repository: PublicMarketplaceDataSource,
+    private val favourites: com.fairswap.core.favourites.FavouritesRepository,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(ListingDetailUiState())
     val state: StateFlow<ListingDetailUiState> = mutableState.asStateFlow()
     private var currentId: String? = null
     private var job: Job? = null
     private var generation = 0L
+
+    fun syncFavourite(id: String) { viewModelScope.launch { favourites.lookup(listOf(id)) } }
+
+    fun setFavourite(id: String, desired: Boolean, onResult: (com.fairswap.core.favourites.FavouriteMutationResult) -> Unit) {
+        viewModelScope.launch { onResult(favourites.setFavourite(id, desired)) }
+    }
 
     fun load(id: String) {
         if (id == currentId && (mutableState.value.loading || mutableState.value.detail != null || mutableState.value.unavailable)) return

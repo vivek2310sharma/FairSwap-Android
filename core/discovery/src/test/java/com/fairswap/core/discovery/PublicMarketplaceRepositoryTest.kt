@@ -1,6 +1,7 @@
 package com.fairswap.core.discovery
 
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -90,6 +91,59 @@ class PublicMarketplaceRepositoryTest {
     }
 
     @Test
+    fun publicCardsVisibilityFlipBeforeFinalEmissionSuppressesCard() = runTest {
+        var checks = 0
+        val gateway = FakeGateway().apply {
+            visible = { ++checks == 1 }
+            cardRows = listOf(PublicListingCardDto(
+                listingId, "Private title", "good", "fixed", 1250,
+                CardCategoryDto("Cycles"), CardCityDto("Jaipur"), null,
+            ))
+        }
+        assertTrue(PublicMarketplaceRepository(gateway, urls).publicCards(listOf(listingId)).isEmpty())
+        assertEquals(2, checks)
+        assertEquals(1, gateway.cardQueryCalls)
+    }
+
+    @Test
+    fun ownerReadablePrivateCardIsRejectedBeforeCardQuery() = runTest {
+        val gateway = FakeGateway().apply {
+            visible = { false }
+            cardRows = listOf(PublicListingCardDto(
+                listingId, "Private title", "good", "fixed", 1250,
+                CardCategoryDto("Private category"), CardCityDto("Private city"), null,
+            ))
+        }
+        assertTrue(PublicMarketplaceRepository(gateway, urls).publicCards(listOf(listingId)).isEmpty())
+        assertEquals(0, gateway.cardQueryCalls)
+        assertEquals(0, gateway.mediaQueryCalls)
+    }
+
+    @Test
+    fun publicCardVisibilityConcurrencyNeverExceedsFour() = runTest {
+        val ids = (1..20).map { "00000000-0000-0000-0000-${it.toString().padStart(12, '0')}" }
+        var active = 0
+        var maximum = 0
+        val gateway = FakeGateway().apply {
+            cardRows = ids.map { id -> PublicListingCardDto(
+                id, "Public $id", "good", "fixed", 100,
+                CardCategoryDto("Cycles"), CardCityDto("Jaipur"), null,
+            ) }
+            visibilityProbe = {
+                active++
+                maximum = maxOf(maximum, active)
+                yield()
+                active--
+                true
+            }
+        }
+        val cards = PublicMarketplaceRepository(gateway, urls).publicCards(ids)
+        assertEquals(20, cards.size)
+        assertEquals(20, gateway.cardQueryIds.size)
+        assertTrue(maximum <= 4)
+    }
+
+    @Test
     fun dtoDecodeAndMediaBuilderNeverExposeOriginals() {
         val dto = Json.decodeFromString<PublicListingDetailDto>(
             """{"id":"$listingId","seller_id":"$sellerId","title":"Bike","description":null,"created_at":"2026-09-01T00:00:00Z","category":{"id":"$listingId","name":"Cycles","slug":"cycles"},"city":{"id":"$listingId","name":"Jaipur"},"locality":null} """
@@ -117,11 +171,19 @@ class PublicMarketplaceRepositoryTest {
         var listingCalls = 0
         var profileCalls = 0
         var visibilityCalls = 0
+        var cardQueryCalls = 0
+        var mediaQueryCalls = 0
+        var cardQueryIds = emptyList<String>()
         var row = row(listingId)
         var media = emptyList<PublicListingMediaDto>()
         var candidates = listOf(row)
+        var cardRows = emptyList<PublicListingCardDto>()
         var visible: (String) -> Boolean = { true }
-        override suspend fun isVisible(listingId: String): Boolean { calls++; visibilityCalls++; return visible(listingId) }
+        var visibilityProbe: (suspend (String) -> Boolean)? = null
+        override suspend fun isVisible(listingId: String): Boolean {
+            calls++; visibilityCalls++
+            return visibilityProbe?.invoke(listingId) ?: visible(listingId)
+        }
         override suspend fun listing(listingId: String): PublicListingDetailDto? { calls++; listingCalls++; return row }
         override suspend fun profile(sellerId: String): PublicSellerProfileDto? {
             calls++; profileCalls++
@@ -129,5 +191,13 @@ class PublicMarketplaceRepositoryTest {
         }
         override suspend fun readyMedia(listingId: String): List<PublicListingMediaDto> { calls++; return media }
         override suspend fun sellerCandidates(sellerId: String): List<PublicListingDetailDto> { calls++; return candidates }
+        override suspend fun publicCards(ids: List<String>): List<PublicListingCardDto> {
+            cardQueryCalls++; cardQueryIds = ids
+            return cardRows
+        }
+        override suspend fun publicCardMedia(ids: List<String>): List<PublicListingCardMediaDto> {
+            mediaQueryCalls++
+            return emptyList()
+        }
     }
 }

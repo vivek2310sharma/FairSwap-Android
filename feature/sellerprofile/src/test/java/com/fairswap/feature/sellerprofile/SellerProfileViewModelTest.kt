@@ -68,5 +68,6 @@ class SellerProfileViewModelTest {
         var seller: suspend () -> PublicSellerResult = { PublicSellerResult.Found(profile()) }
         override suspend fun listing(id: String) = PublicDetailResult.Unavailable
         override suspend fun seller(id: String) = seller.invoke()
+        override suspend fun publicCards(ids: List<String>) = emptyMap<String, com.fairswap.core.discovery.ListingCard>()
     }
 }

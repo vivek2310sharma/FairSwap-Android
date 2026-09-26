@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 interface PublicMarketplaceDataSource {
     suspend fun listing(id: String): PublicDetailResult
     suspend fun seller(id: String): PublicSellerResult
+    suspend fun publicCards(ids: List<String>): Map<String, ListingCard>
 }
 
 interface PublicMarketplaceGateway {
@@ -23,6 +24,8 @@ interface PublicMarketplaceGateway {
     suspend fun profile(sellerId: String): PublicSellerProfileDto?
     suspend fun readyMedia(listingId: String): List<PublicListingMediaDto>
     suspend fun sellerCandidates(sellerId: String): List<PublicListingDetailDto>
+    suspend fun publicCards(ids: List<String>): List<PublicListingCardDto>
+    suspend fun publicCardMedia(ids: List<String>): List<PublicListingCardMediaDto>
 }
 
 @Serializable
@@ -53,6 +56,21 @@ class SupabasePublicMarketplaceGateway(private val supabase: SupabaseClient) : P
             filter { eq("seller_id", sellerId); eq("status", "active") }
             order("created_at", Order.DESCENDING)
             limit(20)
+        }.decodeList()
+
+    override suspend fun publicCards(ids: List<String>): List<PublicListingCardDto> = supabase.from("listings")
+        .select(columns = Columns.list(
+            "id,title,condition,price_type,price_paise,category:categories(name),city:cities(name),locality:localities(name)"
+        )) {
+            filter { isIn("id", ids) }
+            limit(ids.size.toLong())
+        }.decodeList()
+
+    override suspend fun publicCardMedia(ids: List<String>): List<PublicListingCardMediaDto> = if (ids.isEmpty()) emptyList() else
+        supabase.from("listing_media").select(columns = Columns.list("listing_id,id,display_order")) {
+            filter { isIn("listing_id", ids); eq("processing_status", "ready") }
+            order("display_order", Order.ASCENDING)
+            limit(ids.size.toLong() * 20L)
         }.decodeList()
 
     private companion object {
@@ -111,4 +129,57 @@ class PublicMarketplaceRepository(
         }
         return PublicSellerResult.Found(profile.toDomain(cards))
     }
+
+    override suspend fun publicCards(ids: List<String>): Map<String, ListingCard> {
+        val boundedIds = ids.distinct().filter(::validPublicId).take(20)
+        if (boundedIds.isEmpty()) return emptyMap()
+        val initiallyVisible = boundedIds.chunked(4).flatMap { batch ->
+            coroutineScope { batch.map { id -> async { id.takeIf { gateway.isVisible(it) } } }.awaitAll() }
+        }.filterNotNull().toSet()
+        if (initiallyVisible.isEmpty()) return emptyMap()
+        val rows = gateway.publicCards(initiallyVisible.toList()).filter { it.id in initiallyVisible }
+        val media = gateway.publicCardMedia(rows.map { it.id }).groupBy { it.listingId }
+        val finalVisible = rows.map { it.id }.chunked(4).flatMap { batch ->
+            coroutineScope { batch.map { id -> async { id.takeIf { gateway.isVisible(it) } } }.awaitAll() }
+        }.filterNotNull().toSet()
+        return rows.asSequence().filter { it.id in finalVisible }.associate { row ->
+            row.id to ListingCard(
+                id = row.id,
+                title = row.title,
+                price = Rupees.display(row.priceType, row.pricePaise),
+                condition = ListingCondition.fromWire(row.condition)?.label ?: "Condition not specified",
+                category = row.category.name,
+                location = listOfNotNull(row.locality?.name, row.city.name).joinToString(", "),
+                thumbnailUrl = mediaUrls.thumbnail(row.id, media[row.id]?.firstOrNull()?.id),
+            )
+        }
+    }
 }
+
+@Serializable
+data class PublicListingCardDto(
+    val id: String,
+    val title: String,
+    val condition: String? = null,
+    @SerialName("price_type") val priceType: String? = null,
+    @SerialName("price_paise") val pricePaise: Int? = null,
+    val category: CardCategoryDto,
+    val city: CardCityDto,
+    val locality: CardLocalityDto? = null,
+)
+
+@Serializable
+data class PublicListingCardMediaDto(
+    @SerialName("listing_id") val listingId: String,
+    val id: String,
+    @SerialName("display_order") val displayOrder: Int,
+)
+
+@Serializable
+data class CardCategoryDto(val name: String)
+
+@Serializable
+data class CardCityDto(val name: String)
+
+@Serializable
+data class CardLocalityDto(val name: String)

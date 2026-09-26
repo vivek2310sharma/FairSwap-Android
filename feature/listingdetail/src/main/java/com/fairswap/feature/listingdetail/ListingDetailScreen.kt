@@ -19,6 +19,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.fairswap.core.discovery.publicDate
+import com.fairswap.core.favourites.FavouriteValue
 
 @Composable
 fun ListingDetailScreen(
@@ -33,6 +35,10 @@ fun ListingDetailScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onSeller: (String) -> Unit,
+    favourite: FavouriteValue = FavouriteValue.UNKNOWN,
+    favouriteMutating: Boolean = false,
+    onFavourite: (Boolean) -> Unit = {},
+    favouriteError: String? = null,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -51,6 +57,12 @@ fun ListingDetailScreen(
             }
         } }
         state.detail?.let { detail ->
+            favouriteError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error) } }
+            item {
+                IconButton(onClick = { onFavourite(favourite != FavouriteValue.FAVOURITED) }, enabled = !favouriteMutating) {
+                    Text(if (favourite == FavouriteValue.FAVOURITED) "♥ Saved" else "♡ Save", style = MaterialTheme.typography.titleMedium)
+                }
+            }
             item {
                 if (detail.media.isEmpty() || detail.media.all { it.mediumUrl == null }) {
                     Box(Modifier.fillMaxWidth().height(220.dp).background(MaterialTheme.colorScheme.surfaceVariant),
