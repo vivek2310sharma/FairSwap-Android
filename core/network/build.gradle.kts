@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "in.fairswap.core.network"
+    namespace = "com.fairswap.core.network"
     compileSdk = 37
 
     defaultConfig {

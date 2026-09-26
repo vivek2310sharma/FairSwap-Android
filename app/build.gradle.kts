@@ -24,11 +24,11 @@ fun stringLiteral(value: String): String =
     "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 android {
-    namespace = "in.fairswap.app"
+    namespace = "com.fairswap.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "in.fairswap.app"
+        applicationId = "com.fairswap.app"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

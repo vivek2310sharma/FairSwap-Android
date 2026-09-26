@@ -18,6 +18,13 @@ This milestone establishes a staging-first Android baseline: Gradle/Compose, typ
 - Hilt
 - Supabase Kotlin + Ktor OkHttp
 
+## Application IDs
+
+- Production: `com.fairswap.app`
+- Staging: `com.fairswap.app.staging`
+
+These identifiers are fixed in Android-0 before Play distribution work begins.
+
 ## Staging
 
 FairSwapTest project ref: `wpppxlnbzqynvhpeuavd`
