@@ -28,8 +28,11 @@ fun FairSwapApp() {
                         uiState = authViewModel.uiState,
                         onShowSignIn = authViewModel::showSignIn,
                         onShowSignUp = authViewModel::showSignUp,
+                        onShowForgotPassword = authViewModel::showForgotPassword,
                         onSignIn = authViewModel::signIn,
                         onSignUp = authViewModel::signUp,
+                        onRequestPasswordReset = authViewModel::requestPasswordReset,
+                        onSetNewPassword = authViewModel::setNewPassword,
                         onReacceptPolicies = authViewModel::reacceptPolicies,
                         onSignOut = authViewModel::signOut,
                     )
