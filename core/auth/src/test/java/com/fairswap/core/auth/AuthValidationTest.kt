@@ -48,6 +48,25 @@ class AuthValidationTest {
     }
 
     @Test
+    fun resetEmailMustBeValid() {
+        assertEquals("Please enter a valid email address.", AuthValidation.validateResetEmail("invalid"))
+        assertNull(AuthValidation.validateResetEmail(" user@example.com "))
+    }
+
+    @Test
+    fun newPasswordRequiresEightCharactersAndMatchingConfirmation() {
+        assertEquals(
+            "Password must be at least 8 characters long.",
+            AuthValidation.validateNewPassword("1234567", "1234567"),
+        )
+        assertEquals(
+            "Passwords do not match.",
+            AuthValidation.validateNewPassword("12345678", "different"),
+        )
+        assertNull(AuthValidation.validateNewPassword("12345678", "12345678"))
+    }
+
+    @Test
     fun legalVersionsMatchPublicBetaBaseline() {
         assertEquals("2026-09-18", LegalPolicy.TermsVersion)
         assertEquals("2026-09-18", LegalPolicy.PrivacyVersion)

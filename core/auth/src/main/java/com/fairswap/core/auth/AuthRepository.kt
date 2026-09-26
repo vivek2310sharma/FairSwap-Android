@@ -12,10 +12,20 @@ import kotlinx.serialization.json.put
 
 class AuthRepository(
     private val supabase: SupabaseClient,
+    private val callbacks: AuthCallbackConfig,
+    private val recoveryState: RecoveryStateStore,
 ) {
     suspend fun bootstrap(): AuthGate {
         supabase.auth.awaitInitialization()
-        val session = supabase.auth.currentSessionOrNull() ?: return AuthGate.SignedOut
+        val session = supabase.auth.currentSessionOrNull() ?: run {
+            recoveryState.isPending = false
+            return AuthGate.SignedOut
+        }
+        if (recoveryState.isPending || recoveryState.expectedCallbackKind == AuthCallbackKind.Recovery) {
+            recoveryState.isPending = true
+            recoveryState.expectedCallbackKind = null
+            return AuthGate.RecoveryRequired
+        }
         val user = session.user ?: return AuthGate.Failure("Authenticated session did not contain a user.")
 
         return runCatching {
@@ -64,6 +74,7 @@ class AuthRepository(
                 this.email = email.trim()
                 this.password = password
             }
+            recoveryState.expectedCallbackKind = null
         }.fold(
             onSuccess = { bootstrap() },
             onFailure = {
@@ -80,7 +91,7 @@ class AuthRepository(
         }
 
         return runCatching {
-            supabase.auth.signUpWith(Email) {
+            supabase.auth.signUpWith(Email, redirectUrl = callbacks.confirmationUrl) {
                 email = input.email.trim()
                 password = input.password
                 data = buildJsonObject {
@@ -93,10 +104,37 @@ class AuthRepository(
                     put("minimum_age_confirmed", LegalPolicy.MinimumAge)
                 }
             }
+            recoveryState.expectedCallbackKind = AuthCallbackKind.Confirmation
             AuthGate.ConfirmationRequired(input.email.trim())
         }.getOrElse {
             AuthGate.Failure("Unable to create your FairSwap account.")
         }
+    }
+
+    suspend fun requestPasswordReset(email: String): AuthGate {
+        AuthValidation.validateResetEmail(email)?.let { return AuthGate.Failure(it) }
+        return runCatching {
+            supabase.auth.resetPasswordForEmail(
+                email = email.trim(),
+                redirectUrl = callbacks.recoveryUrl,
+            )
+            recoveryState.expectedCallbackKind = AuthCallbackKind.Recovery
+            AuthGate.ResetEmailSent
+        }.getOrElse { AuthGate.ResetEmailSent }
+    }
+
+    suspend fun setNewPassword(password: String, confirmation: String): AuthGate {
+        AuthValidation.validateNewPassword(password, confirmation)?.let { return AuthGate.Failure(it) }
+        if (!recoveryState.isPending || supabase.auth.currentSessionOrNull() == null) {
+            return AuthGate.Failure("Recovery session expired. Request a new password reset email.")
+        }
+        return runCatching {
+            supabase.auth.updateUser { this.password = password }
+            recoveryState.isPending = false
+        }.fold(
+            onSuccess = { bootstrap() },
+            onFailure = { AuthGate.Failure("Unable to update your password. Request a new reset link if it has expired.") },
+        )
     }
 
     suspend fun reacceptPolicies(): AuthGate {
@@ -121,6 +159,8 @@ class AuthRepository(
     suspend fun signOut(): AuthGate {
         return runCatching {
             supabase.auth.signOut()
+            recoveryState.isPending = false
+            recoveryState.expectedCallbackKind = null
             AuthGate.SignedOut
         }.getOrElse {
             AuthGate.Failure("Unable to sign out. Please try again.")

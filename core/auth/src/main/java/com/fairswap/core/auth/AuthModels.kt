@@ -13,6 +13,8 @@ data class SignUpInput(
 
 sealed interface AuthGate {
     data object SignedOut : AuthGate
+    data object RecoveryRequired : AuthGate
+    data object ResetEmailSent : AuthGate
     data class ConfirmationRequired(val email: String) : AuthGate
     data class PolicyReviewRequired(
         val profile: ProfileSummary,

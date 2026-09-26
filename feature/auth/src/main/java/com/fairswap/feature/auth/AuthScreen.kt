@@ -36,8 +36,11 @@ fun AuthScreen(
     uiState: AuthUiState,
     onShowSignIn: () -> Unit,
     onShowSignUp: () -> Unit,
+    onShowForgotPassword: () -> Unit,
     onSignIn: (String, String) -> Unit,
     onSignUp: (SignUpInput) -> Unit,
+    onRequestPasswordReset: (String) -> Unit,
+    onSetNewPassword: (String, String) -> Unit,
     onReacceptPolicies: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
@@ -53,7 +56,7 @@ fun AuthScreen(
         ) {
             Text("FairSwap", style = MaterialTheme.typography.headlineMedium)
             Text(
-                "Android-1 authentication",
+                "FairSwap account",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -68,6 +71,7 @@ fun AuthScreen(
                         error = uiState.error,
                         onSubmit = onSignIn,
                         onShowSignUp = onShowSignUp,
+                        onShowForgotPassword = onShowForgotPassword,
                     )
                     AuthMode.SignUp -> SignUpForm(
                         isLoading = uiState.isLoading,
@@ -75,7 +79,20 @@ fun AuthScreen(
                         onSubmit = onSignUp,
                         onShowSignIn = onShowSignIn,
                     )
+                    AuthMode.ForgotPassword -> ForgotPasswordForm(
+                        isLoading = uiState.isLoading,
+                        error = uiState.error,
+                        onSubmit = onRequestPasswordReset,
+                        onShowSignIn = onShowSignIn,
+                    )
                 }
+                AuthGate.ResetEmailSent -> ResetEmailSent(onShowSignIn)
+                AuthGate.RecoveryRequired -> SetNewPasswordForm(
+                    isLoading = uiState.isLoading,
+                    error = uiState.error,
+                    onSubmit = onSetNewPassword,
+                    onSignOut = onSignOut,
+                )
                 is AuthGate.ConfirmationRequired -> ConfirmationPending(
                     email = gate.email,
                     onBackToSignIn = onShowSignIn,
@@ -100,6 +117,17 @@ fun AuthScreen(
                 is AuthGate.Failure -> Unit
             }
 
+            if (!uiState.isInitializing && uiState.error != null && (
+                    uiState.gate is AuthGate.ConfirmationRequired ||
+                    uiState.gate is AuthGate.ResetEmailSent ||
+                    uiState.gate is AuthGate.SignedIn ||
+                    uiState.gate is AuthGate.Restricted
+                )
+            ) {
+                Spacer(Modifier.height(12.dp))
+                ErrorText(uiState.error!!)
+            }
+
             if (uiState.isLoading && !uiState.isInitializing) {
                 Spacer(Modifier.height(16.dp))
                 CircularProgressIndicator()
@@ -114,6 +142,7 @@ private fun SignInForm(
     error: String?,
     onSubmit: (String, String) -> Unit,
     onShowSignUp: () -> Unit,
+    onShowForgotPassword: () -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -146,6 +175,79 @@ private fun SignInForm(
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Create account") }
+        OutlinedButton(
+            onClick = onShowForgotPassword,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Forgot password?") }
+    }
+}
+
+@Composable
+private fun ForgotPasswordForm(
+    isLoading: Boolean,
+    error: String?,
+    onSubmit: (String) -> Unit,
+    onShowSignIn: () -> Unit,
+) {
+    var email by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Reset password", style = MaterialTheme.typography.headlineSmall)
+        Text("Enter your email address to receive a reset link.")
+        error?.let { ErrorText(it) }
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(onClick = { onSubmit(email) }, enabled = !isLoading) { Text("Send reset link") }
+        OutlinedButton(onClick = onShowSignIn, enabled = !isLoading) { Text("Back to sign in") }
+    }
+}
+
+@Composable
+private fun ResetEmailSent(onShowSignIn: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Check your email", style = MaterialTheme.typography.headlineSmall)
+        Text("If an account exists for that address, a password reset link has been sent.")
+        Button(onClick = onShowSignIn) { Text("Back to sign in") }
+    }
+}
+
+@Composable
+private fun SetNewPasswordForm(
+    isLoading: Boolean,
+    error: String?,
+    onSubmit: (String, String) -> Unit,
+    onSignOut: () -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+    var confirmation by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Set new password", style = MaterialTheme.typography.headlineSmall)
+        error?.let { ErrorText(it) }
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("New password (min. 8 characters)") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = confirmation,
+            onValueChange = { confirmation = it },
+            label = { Text("Confirm new password") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(onClick = { onSubmit(password, confirmation) }, enabled = !isLoading) {
+            Text("Update password")
+        }
+        OutlinedButton(onClick = onSignOut, enabled = !isLoading) { Text("Cancel and sign out") }
     }
 }
 

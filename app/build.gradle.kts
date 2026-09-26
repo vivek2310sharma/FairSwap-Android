@@ -42,6 +42,10 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
+            manifestPlaceholders["authCallbackScheme"] = "fairswap-staging"
+            manifestPlaceholders["authCallbackHost"] = "auth"
+            buildConfigField("String", "AUTH_CALLBACK_SCHEME", stringLiteral("fairswap-staging"))
+            buildConfigField("String", "AUTH_CALLBACK_HOST", stringLiteral("auth"))
             buildConfigField("String", "ENVIRONMENT_NAME", stringLiteral("staging"))
             buildConfigField(
                 "String",
@@ -61,6 +65,10 @@ android {
 
         create("production") {
             dimension = "environment"
+            manifestPlaceholders["authCallbackScheme"] = "fairswap"
+            manifestPlaceholders["authCallbackHost"] = "auth"
+            buildConfigField("String", "AUTH_CALLBACK_SCHEME", stringLiteral("fairswap"))
+            buildConfigField("String", "AUTH_CALLBACK_HOST", stringLiteral("auth"))
             buildConfigField("String", "ENVIRONMENT_NAME", stringLiteral("production"))
             buildConfigField("String", "SUPABASE_URL", stringLiteral(configValue("SUPABASE_PRODUCTION_URL")))
             buildConfigField(
@@ -97,6 +105,8 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:auth"))
     implementation(project(":feature:auth"))
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

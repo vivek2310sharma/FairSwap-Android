@@ -2,6 +2,9 @@ package com.fairswap.app.di
 
 import com.fairswap.app.BuildConfig
 import com.fairswap.core.auth.AuthRepository
+import com.fairswap.core.auth.AuthCallbackConfig
+import com.fairswap.core.auth.RecoveryStateStore
+import com.fairswap.core.auth.AuthCallbackCoordinator
 import com.fairswap.core.network.BackendHealthRepository
 import com.fairswap.core.network.FairSwapBackendConfig
 import com.fairswap.core.network.SupabaseClientFactory
@@ -9,12 +12,29 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import io.github.jan.supabase.SupabaseClient
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    @Provides
+    @Singleton
+    fun provideAuthCallbackConfig() = AuthCallbackConfig(
+        BuildConfig.AUTH_CALLBACK_SCHEME,
+        BuildConfig.AUTH_CALLBACK_HOST,
+    )
+
+    @Provides
+    @Singleton
+    fun provideRecoveryStateStore(@ApplicationContext context: Context) = RecoveryStateStore(context)
+
+    @Provides
+    @Singleton
+    fun provideAuthCallbackCoordinator() = AuthCallbackCoordinator()
+
     @Provides
     @Singleton
     fun provideBackendConfig(): FairSwapBackendConfig = FairSwapBackendConfig(
@@ -27,7 +47,8 @@ object AppModule {
     @Singleton
     fun provideSupabaseClient(
         config: FairSwapBackendConfig,
-    ): SupabaseClient = SupabaseClientFactory.create(config)
+        callbacks: AuthCallbackConfig,
+    ): SupabaseClient = SupabaseClientFactory.create(config, callbacks.scheme, callbacks.host)
 
     @Provides
     @Singleton
@@ -40,5 +61,7 @@ object AppModule {
     @Singleton
     fun provideAuthRepository(
         supabase: SupabaseClient,
-    ): AuthRepository = AuthRepository(supabase)
+        callbacks: AuthCallbackConfig,
+        recoveryState: RecoveryStateStore,
+    ): AuthRepository = AuthRepository(supabase, callbacks, recoveryState)
 }
