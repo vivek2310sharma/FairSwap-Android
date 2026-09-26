@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,7 @@ fun AuthScreen(
     onSetNewPassword: (String, String) -> Unit,
     onReacceptPolicies: () -> Unit,
     onSignOut: () -> Unit,
+    onFavourites: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { paddingValues ->
@@ -111,6 +113,7 @@ fun AuthScreen(
                     accountStatus = gate.account.accountStatus,
                     isLoading = uiState.isLoading,
                     onSignOut = onSignOut,
+                    onFavourites = onFavourites,
                 )
                 is AuthGate.Restricted -> RestrictedAccount(
                     status = gate.accountStatus,
@@ -390,11 +393,13 @@ private fun AccountHome(
     accountStatus: String,
     isLoading: Boolean,
     onSignOut: () -> Unit,
+    onFavourites: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Welcome, $displayName", style = MaterialTheme.typography.headlineSmall)
         Text("Account status: $accountStatus")
         Text("Authenticated against FairSwapTest with existing RLS.")
+        OutlinedButton(onClick = onFavourites, enabled = !isLoading) { Text("Saved Favourites") }
         Button(onClick = onSignOut, enabled = !isLoading) { Text("Sign out") }
     }
 }

@@ -110,6 +110,7 @@ class DiscoveryViewModel @Inject constructor(
         mutableState.value.draft.cityId?.let(::selectCity)
     }
 
+
     fun applyFilters() {
         val filters = mutableState.value.draft
         filters.validate()?.let { message ->

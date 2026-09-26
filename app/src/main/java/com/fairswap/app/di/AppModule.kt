@@ -15,6 +15,10 @@ import com.fairswap.core.discovery.PublicMarketplaceDataSource
 import com.fairswap.core.discovery.PublicMarketplaceGateway
 import com.fairswap.core.discovery.PublicMarketplaceRepository
 import com.fairswap.core.discovery.SupabasePublicMarketplaceGateway
+import com.fairswap.core.favourites.FavouritesGateway
+import com.fairswap.core.favourites.FavouritesRepository
+import com.fairswap.core.favourites.FavouriteStateStore
+import com.fairswap.core.favourites.SupabaseFavouritesGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -49,6 +53,22 @@ object AppModule {
         gateway: PublicMarketplaceGateway,
         mediaUrls: PublicMediaUrlBuilder,
     ): PublicMarketplaceDataSource = PublicMarketplaceRepository(gateway, mediaUrls)
+
+    @Provides
+    @Singleton
+    fun provideFavouriteStateStore() = FavouriteStateStore()
+
+    @Provides
+    @Singleton
+    fun provideFavouritesGateway(supabase: SupabaseClient): FavouritesGateway = SupabaseFavouritesGateway(supabase)
+
+    @Provides
+    @Singleton
+    fun provideFavouritesRepository(
+        gateway: FavouritesGateway,
+        publicListings: PublicMarketplaceDataSource,
+        stateStore: FavouriteStateStore,
+    ) = FavouritesRepository(gateway, publicListings, stateStore)
 
     @Provides
     @Singleton

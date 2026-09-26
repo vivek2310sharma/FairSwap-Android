@@ -26,6 +26,7 @@ data class PublicListingMedia(
     val largeUrl: String?,
 )
 
+
 data class PublicSpecification(val label: String, val value: String)
 
 data class PublicSellerProfile(

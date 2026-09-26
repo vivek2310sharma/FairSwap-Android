@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,7 @@ import com.fairswap.core.discovery.ListingCondition
 import com.fairswap.core.discovery.ListingSort
 import com.fairswap.core.discovery.SearchFilters
 import com.fairswap.core.discovery.ResultErrorKind
+import com.fairswap.core.favourites.FavouriteValue
 
 @Composable
 fun DiscoveryScreen(
@@ -51,6 +53,10 @@ fun DiscoveryScreen(
     onRetryMetadata: () -> Unit,
     onAccount: () -> Unit,
     onListingSelected: (String) -> Unit,
+    favouriteValues: Map<String, FavouriteValue> = emptyMap(),
+    mutatingIds: Set<String> = emptySet(),
+    onFavourite: (String, Boolean) -> Unit = { _, _ -> },
+    favouriteError: String? = null,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -138,6 +144,7 @@ fun DiscoveryScreen(
             }
         }
         state.inputError?.let { message -> item { ErrorText(message) } }
+        favouriteError?.let { message -> item { ErrorText(message) } }
         state.metadataError?.let { message ->
             item {
                 Column {
@@ -165,7 +172,13 @@ fun DiscoveryScreen(
             item { Text("No listings match these filters.") }
         }
         items(state.results.items, key = { it.id }) { listing ->
-            ListingCardView(listing, onClick = { onListingSelected(listing.id) })
+            ListingCardView(
+                listing,
+                onClick = { onListingSelected(listing.id) },
+                saved = favouriteValues[listing.id] == FavouriteValue.FAVOURITED,
+                mutating = listing.id in mutatingIds,
+                onFavourite = { onFavourite(listing.id, favouriteValues[listing.id] != FavouriteValue.FAVOURITED) },
+            )
         }
         if (state.results.canLoadMore && state.results.errorKind != ResultErrorKind.NEXT_PAGE) item {
             Button(onClick = onLoadMore, enabled = !state.loadingMore && !state.loadingFirstPage) {
@@ -203,7 +216,7 @@ private fun <T> Selector(
 }
 
 @Composable
-private fun ListingCardView(listing: ListingCard, onClick: () -> Unit) {
+private fun ListingCardView(listing: ListingCard, onClick: () -> Unit, saved: Boolean, mutating: Boolean, onFavourite: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (listing.thumbnailUrl == null) {
@@ -221,6 +234,9 @@ private fun ListingCardView(listing: ListingCard, onClick: () -> Unit) {
             Text(listing.price, style = MaterialTheme.typography.titleSmall)
             Text("${listing.condition} · ${listing.category}")
             Text(listing.location, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            IconButton(onClick = onFavourite, enabled = !mutating) {
+                Text(if (saved) "♥" else "♡", style = MaterialTheme.typography.headlineSmall)
+            }
         }
     }
 }

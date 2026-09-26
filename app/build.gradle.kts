@@ -111,6 +111,8 @@ dependencies {
     implementation(project(":feature:discovery"))
     implementation(project(":feature:listingdetail"))
     implementation(project(":feature:sellerprofile"))
+    implementation(project(":core:favourites"))
+    implementation(project(":feature:favourites"))
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)
 

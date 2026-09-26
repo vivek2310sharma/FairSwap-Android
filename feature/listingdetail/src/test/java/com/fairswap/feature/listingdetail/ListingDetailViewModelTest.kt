@@ -31,7 +31,7 @@ class ListingDetailViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val source = FakeSource()
-            val model = ListingDetailViewModel(source)
+            val model = ListingDetailViewModel(source, fakeFavouritesRepository(source))
             model.load(id)
             advanceUntilIdle()
             assertFalse(model.state.value.loading)
@@ -50,7 +50,7 @@ class ListingDetailViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val source = FakeSource().apply { listing = { PublicDetailResult.Unavailable } }
-            val model = ListingDetailViewModel(source)
+            val model = ListingDetailViewModel(source, fakeFavouritesRepository(source))
             model.load(id)
             advanceUntilIdle()
             assertTrue(model.state.value.unavailable)
@@ -69,7 +69,7 @@ class ListingDetailViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val source = FakeSource().apply { listing = { awaitCancellation() } }
-            val model = ListingDetailViewModel(source)
+            val model = ListingDetailViewModel(source, fakeFavouritesRepository(source))
             model.load(id)
             runCurrent()
             advanceTimeBy(15_001)
@@ -92,9 +92,24 @@ class ListingDetailViewModelTest {
         PublicSellerProfile(sellerId, "Seller", null, null, null, "2026-09-01T00:00:00Z"), emptyList(),
     )
 
+    private fun fakeFavouritesRepository(source: FakeSource) = com.fairswap.core.favourites.FavouritesRepository(
+        FakeFavouritesGateway(), source, com.fairswap.core.favourites.FavouriteStateStore()
+    )
+
+    private inner class FakeFavouritesGateway : com.fairswap.core.favourites.FavouritesGateway {
+        override suspend fun currentUserId() = null
+        override suspend fun policyAccepted() = false
+        override suspend fun isVisible(listingId: String) = false
+        override suspend fun page(userId: String, offset: Int, size: Int) = emptyList<com.fairswap.core.favourites.FavouriteRow>()
+        override suspend fun existing(userId: String, listingIds: List<String>) = emptySet<String>()
+        override suspend fun insert(userId: String, listingId: String) = Unit
+        override suspend fun delete(userId: String, listingIds: List<String>) = Unit
+    }
+
     private inner class FakeSource : PublicMarketplaceDataSource {
         var listing: suspend () -> PublicDetailResult = { PublicDetailResult.Found(detail()) }
         override suspend fun listing(id: String) = listing.invoke()
         override suspend fun seller(id: String) = PublicSellerResult.Unavailable
+        override suspend fun publicCards(ids: List<String>) = emptyMap<String, com.fairswap.core.discovery.ListingCard>()
     }
 }
