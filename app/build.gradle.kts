@@ -46,6 +46,7 @@ android {
             manifestPlaceholders["authCallbackHost"] = "auth"
             buildConfigField("String", "AUTH_CALLBACK_SCHEME", stringLiteral("fairswap-staging"))
             buildConfigField("String", "AUTH_CALLBACK_HOST", stringLiteral("auth"))
+            buildConfigField("String", "FAIRSWAP_WEB_BASE_URL", stringLiteral(configValue("FAIRSWAP_STAGING_WEB_BASE_URL")))
             buildConfigField("String", "ENVIRONMENT_NAME", stringLiteral("staging"))
             buildConfigField(
                 "String",
@@ -69,6 +70,7 @@ android {
             manifestPlaceholders["authCallbackHost"] = "auth"
             buildConfigField("String", "AUTH_CALLBACK_SCHEME", stringLiteral("fairswap"))
             buildConfigField("String", "AUTH_CALLBACK_HOST", stringLiteral("auth"))
+            buildConfigField("String", "FAIRSWAP_WEB_BASE_URL", stringLiteral(configValue("FAIRSWAP_PRODUCTION_WEB_BASE_URL")))
             buildConfigField("String", "ENVIRONMENT_NAME", stringLiteral("production"))
             buildConfigField("String", "SUPABASE_URL", stringLiteral(configValue("SUPABASE_PRODUCTION_URL")))
             buildConfigField(
@@ -105,6 +107,8 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:auth"))
     implementation(project(":feature:auth"))
+    implementation(project(":core:discovery"))
+    implementation(project(":feature:discovery"))
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)
 

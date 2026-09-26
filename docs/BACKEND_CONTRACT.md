@@ -4,7 +4,7 @@ The canonical backend implementation currently lives with FairSwap Web/Supabase.
 
 ## Accounts
 - Supabase Auth email/password with mandatory confirmation.
-- Google sign-in is for existing matching verified FairSwap accounts.
+- Android uses email/password authentication, confirmation, and recovery. Google sign-in is cancelled for Android scope.
 - Current policy acceptance and 18+ confirmation are database-enforced requirements for protected customer actions.
 
 ## Listings
