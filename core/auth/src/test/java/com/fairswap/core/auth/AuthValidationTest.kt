@@ -26,6 +26,28 @@ class AuthValidationTest {
     }
 
     @Test
+    fun signUpEnforcesDisplayNameBoundsAfterTrimming() {
+        assertEquals(
+            "Display name must be between 2 and 50 characters.",
+            AuthValidation.validateSignUp(validSignUp().copy(displayName = " a ")),
+        )
+        assertNull(AuthValidation.validateSignUp(validSignUp().copy(displayName = "x".repeat(50))))
+        assertEquals(
+            "Display name must be between 2 and 50 characters.",
+            AuthValidation.validateSignUp(validSignUp().copy(displayName = "x".repeat(51))),
+        )
+    }
+
+    @Test
+    fun signUpEnforcesEightCharacterPassword() {
+        assertEquals(
+            "Password must be at least 8 characters long.",
+            AuthValidation.validateSignUp(validSignUp().copy(password = "1234567")),
+        )
+        assertNull(AuthValidation.validateSignUp(validSignUp().copy(password = "12345678")))
+    }
+
+    @Test
     fun legalVersionsMatchPublicBetaBaseline() {
         assertEquals("2026-09-18", LegalPolicy.TermsVersion)
         assertEquals("2026-09-18", LegalPolicy.PrivacyVersion)

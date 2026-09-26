@@ -14,6 +14,7 @@ class AuthRepository(
     private val supabase: SupabaseClient,
 ) {
     suspend fun bootstrap(): AuthGate {
+        supabase.auth.awaitInitialization()
         val session = supabase.auth.currentSessionOrNull() ?: return AuthGate.SignedOut
         val user = session.user ?: return AuthGate.Failure("Authenticated session did not contain a user.")
 
@@ -48,8 +49,8 @@ class AuthRepository(
             } else {
                 AuthGate.PolicyReviewRequired(profileSummary, accountSummary)
             }
-        }.getOrElse { error ->
-            AuthGate.Failure(error.safeAuthMessage("Unable to load your FairSwap account."))
+        }.getOrElse {
+            AuthGate.Failure("Unable to load your FairSwap account.")
         }
     }
 
@@ -93,8 +94,8 @@ class AuthRepository(
                 }
             }
             AuthGate.ConfirmationRequired(input.email.trim())
-        }.getOrElse { error ->
-            AuthGate.Failure(error.safeAuthMessage("Unable to create your FairSwap account."))
+        }.getOrElse {
+            AuthGate.Failure("Unable to create your FairSwap account.")
         }
     }
 
@@ -111,7 +112,7 @@ class AuthRepository(
             onSuccess = { bootstrap() },
             onFailure = {
                 AuthGate.Failure(
-                    it.safeAuthMessage("Failed to record policy re-acceptance. Please try again.")
+                    "Failed to record policy re-acceptance. Please try again."
                 )
             },
         )
@@ -125,10 +126,4 @@ class AuthRepository(
             AuthGate.Failure("Unable to sign out. Please try again.")
         }
     }
-}
-
-private fun Throwable.safeAuthMessage(fallback: String): String {
-    val raw = message.orEmpty()
-    if (raw.isBlank()) return fallback
-    return raw.take(180)
 }

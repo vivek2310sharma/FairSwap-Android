@@ -59,7 +59,9 @@ fun AuthScreen(
             )
             Spacer(Modifier.height(24.dp))
 
-            when (val gate = uiState.gate) {
+            if (uiState.isInitializing) {
+                CircularProgressIndicator()
+            } else when (val gate = uiState.gate) {
                 AuthGate.SignedOut -> when (uiState.mode) {
                     AuthMode.SignIn -> SignInForm(
                         isLoading = uiState.isLoading,
@@ -98,7 +100,7 @@ fun AuthScreen(
                 is AuthGate.Failure -> Unit
             }
 
-            if (uiState.isLoading) {
+            if (uiState.isLoading && !uiState.isInitializing) {
                 Spacer(Modifier.height(16.dp))
                 CircularProgressIndicator()
             }

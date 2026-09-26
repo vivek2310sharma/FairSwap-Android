@@ -59,10 +59,12 @@ class AuthViewModel @Inject constructor(
             when (val result = block()) {
                 is AuthGate.Failure -> uiState = uiState.copy(
                     isLoading = false,
+                    isInitializing = false,
                     error = result.message,
                 )
                 else -> uiState = uiState.copy(
                     isLoading = false,
+                    isInitializing = false,
                     gate = result,
                     error = null,
                 )
@@ -78,6 +80,7 @@ enum class AuthMode {
 
 data class AuthUiState(
     val isLoading: Boolean = false,
+    val isInitializing: Boolean = true,
     val mode: AuthMode = AuthMode.SignIn,
     val gate: AuthGate = AuthGate.SignedOut,
     val error: String? = null,
