@@ -1,5 +1,6 @@
 package com.fairswap.core.network
 
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.SerialName
@@ -7,12 +8,12 @@ import kotlinx.serialization.Serializable
 
 class BackendHealthRepository(
     private val config: FairSwapBackendConfig,
+    private val supabase: SupabaseClient,
 ) {
     suspend fun check(): BackendHealth {
         if (!config.isConfigured) return BackendHealth.NotConfigured
 
         return runCatching {
-            val supabase = SupabaseClientFactory.create(config)
             val categories = supabase
                 .from("categories")
                 .select(columns = Columns.list("id, name")) {

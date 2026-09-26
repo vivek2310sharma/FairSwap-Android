@@ -1,0 +1,31 @@
+package com.fairswap.core.auth
+
+object AuthValidation {
+    private val EmailPattern = Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
+
+    fun validateSignIn(email: String, password: String): String? {
+        if (!EmailPattern.matches(email.trim())) return "Please enter a valid email address."
+        if (password.isBlank()) return "Password is required."
+        return null
+    }
+
+    fun validateSignUp(input: SignUpInput): String? {
+        val displayName = input.displayName.trim()
+        if (displayName.length !in 2..50) {
+            return "Display name must be between 2 and 50 characters."
+        }
+        if (!EmailPattern.matches(input.email.trim())) {
+            return "Please enter a valid email address."
+        }
+        if (input.password.length < 8) {
+            return "Password must be at least 8 characters long."
+        }
+        if (!input.termsAccepted) {
+            return "You must accept the Terms of Service and Acceptable Use Policy, and acknowledge the Privacy Policy."
+        }
+        if (!input.ageConfirmed) {
+            return "You must confirm that you are at least 18 years old."
+        }
+        return null
+    }
+}

@@ -19,6 +19,7 @@ android {
 
 dependencies {
     implementation(platform(libs.supabase.bom))
+    api(libs.supabase.core)
     implementation(libs.supabase.auth)
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
