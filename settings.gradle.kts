@@ -18,3 +18,5 @@ rootProject.name = "FairSwap-Android"
 include(":app")
 include(":core:network")
 include(":core:designsystem")
+include(":core:auth")
+include(":feature:auth")

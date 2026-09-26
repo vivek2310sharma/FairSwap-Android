@@ -2,33 +2,20 @@ package com.fairswap.app.ui
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.ui.NavDisplay
-import kotlinx.serialization.Serializable
-
-@Serializable
-private data object FoundationRoute : NavKey
+import com.fairswap.feature.auth.AuthScreen
+import com.fairswap.feature.auth.AuthViewModel
 
 @Composable
 fun FairSwapApp() {
-    val backStack = rememberNavBackStack(FoundationRoute)
-    val foundationViewModel: FoundationViewModel = viewModel()
+    val authViewModel: AuthViewModel = viewModel()
 
-    NavDisplay(
-        backStack = backStack,
-        onBack = { backStack.removeLastOrNull() },
-        entryProvider = { key ->
-            when (key) {
-                FoundationRoute -> NavEntry(key) {
-                    FoundationScreen(
-                        uiState = foundationViewModel.uiState,
-                        onCheckConnection = foundationViewModel::checkConnection,
-                    )
-                }
-                else -> error("Unknown navigation key: $key")
-            }
-        },
+    AuthScreen(
+        uiState = authViewModel.uiState,
+        onShowSignIn = authViewModel::showSignIn,
+        onShowSignUp = authViewModel::showSignUp,
+        onSignIn = authViewModel::signIn,
+        onSignUp = authViewModel::signUp,
+        onReacceptPolicies = authViewModel::reacceptPolicies,
+        onSignOut = authViewModel::signOut,
     )
 }
