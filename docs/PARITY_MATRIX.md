@@ -10,8 +10,8 @@
 | Policy acceptance / 18+ | Complete | Complete | Android-1A |
 | Google sign-in | Complete | Cancelled for Android | N/A |
 | Profile | Complete | Account summary in auth | Android-1/3 |
-| Public discovery | Complete | Implemented; manual staging acceptance pending | Android-2A |
-| Listing detail / seller profile | Complete | Not started | Android-2 |
+| Public discovery | Complete | Complete | Android-2A |
+| Listing detail / seller profile | Complete | Implemented; manual staging acceptance pending | Android-2B |
 | Favourites | Complete | Not started | Android-3 |
 | Seller listing CRUD/lifecycle | Complete | Not started | Android-4 |
 | Listing media pipeline | Complete on Web trusted path | Blocked on mobile-safe media boundary | Android-5 |

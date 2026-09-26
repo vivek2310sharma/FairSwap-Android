@@ -26,8 +26,16 @@ class PublicMediaUrlBuilder(webBaseUrl: String) {
     }.getOrNull()
 
     fun thumbnail(listingId: String, mediaId: String?): String? {
+        return derivative(listingId, mediaId, "thumb")
+    }
+
+    fun medium(listingId: String, mediaId: String?): String? = derivative(listingId, mediaId, "medium")
+
+    fun large(listingId: String, mediaId: String?): String? = derivative(listingId, mediaId, "large")
+
+    private fun derivative(listingId: String, mediaId: String?, size: String): String? {
         if (origin == null || mediaId == null || !listingId.isUuid() || !mediaId.isUuid()) return null
-        return "$origin/api/listings/$listingId/media/$mediaId/thumb"
+        return "$origin/api/listings/$listingId/media/$mediaId/$size"
     }
 }
 

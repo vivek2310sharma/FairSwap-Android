@@ -109,6 +109,8 @@ dependencies {
     implementation(project(":feature:auth"))
     implementation(project(":core:discovery"))
     implementation(project(":feature:discovery"))
+    implementation(project(":feature:listingdetail"))
+    implementation(project(":feature:sellerprofile"))
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)
 
@@ -126,6 +128,7 @@ dependencies {
 
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
