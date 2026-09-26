@@ -1,0 +1,9 @@
+# Copy to local.properties and fill only the staging publishable key.
+# local.properties is gitignored.
+
+sdk.dir=/path/to/Android/Sdk
+SUPABASE_STAGING_URL=https://wpppxlnbzqynvhpeuavd.supabase.co
+SUPABASE_STAGING_PUBLISHABLE_KEY=replace_with_staging_publishable_key
+
+SUPABASE_PRODUCTION_URL=
+SUPABASE_PRODUCTION_PUBLISHABLE_KEY=
