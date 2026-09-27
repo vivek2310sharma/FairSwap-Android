@@ -45,7 +45,6 @@ fun AuthScreen(
     onSetNewPassword: (String, String) -> Unit,
     onReacceptPolicies: () -> Unit,
     onSignOut: () -> Unit,
-    onFavourites: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { paddingValues ->
@@ -108,13 +107,7 @@ fun AuthScreen(
                     onAccept = onReacceptPolicies,
                     onSignOut = onSignOut,
                 )
-                is AuthGate.SignedIn -> AccountHome(
-                    displayName = gate.profile.displayName,
-                    accountStatus = gate.account.accountStatus,
-                    isLoading = uiState.isLoading,
-                    onSignOut = onSignOut,
-                    onFavourites = onFavourites,
-                )
+                is AuthGate.SignedIn -> Unit
                 is AuthGate.Restricted -> RestrictedAccount(
                     status = gate.accountStatus,
                     onSignOut = onSignOut,
@@ -125,7 +118,6 @@ fun AuthScreen(
             if (!uiState.isInitializing && uiState.error != null && (
                     uiState.gate is AuthGate.ConfirmationRequired ||
                     uiState.gate is AuthGate.ResetEmailSent ||
-                    uiState.gate is AuthGate.SignedIn ||
                     uiState.gate is AuthGate.Restricted
                 )
             ) {
@@ -384,23 +376,6 @@ private fun PolicyReview(
             enabled = termsAccepted && ageConfirmed && !isLoading,
         ) { Text("Accept and continue") }
         OutlinedButton(onClick = onSignOut, enabled = !isLoading) { Text("Sign out") }
-    }
-}
-
-@Composable
-private fun AccountHome(
-    displayName: String,
-    accountStatus: String,
-    isLoading: Boolean,
-    onSignOut: () -> Unit,
-    onFavourites: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Welcome, $displayName", style = MaterialTheme.typography.headlineSmall)
-        Text("Account status: $accountStatus")
-        Text("Authenticated against FairSwapTest with existing RLS.")
-        OutlinedButton(onClick = onFavourites, enabled = !isLoading) { Text("Saved Favourites") }
-        Button(onClick = onSignOut, enabled = !isLoading) { Text("Sign out") }
     }
 }
 

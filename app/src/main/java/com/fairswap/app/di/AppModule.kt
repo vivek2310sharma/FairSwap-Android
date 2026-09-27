@@ -2,6 +2,9 @@ package com.fairswap.app.di
 
 import com.fairswap.app.BuildConfig
 import com.fairswap.core.auth.AuthRepository
+import com.fairswap.core.account.AccountGateway
+import com.fairswap.core.account.AccountRepository
+import com.fairswap.core.account.SupabaseAccountGateway
 import com.fairswap.core.auth.AuthCallbackConfig
 import com.fairswap.core.auth.RecoveryStateStore
 import com.fairswap.core.auth.AuthCallbackCoordinator
@@ -31,6 +34,14 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    @Provides
+    @Singleton
+    fun provideAccountGateway(supabase: SupabaseClient): AccountGateway = SupabaseAccountGateway(supabase)
+
+    @Provides
+    @Singleton
+    fun provideAccountRepository(gateway: AccountGateway) = AccountRepository(gateway)
+
     @Provides
     @Singleton
     fun providePublicMediaUrlBuilder() = PublicMediaUrlBuilder(BuildConfig.FAIRSWAP_WEB_BASE_URL)

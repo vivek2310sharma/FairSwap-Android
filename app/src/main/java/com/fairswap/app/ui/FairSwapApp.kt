@@ -6,6 +6,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -24,6 +29,9 @@ import com.fairswap.feature.favourites.FavouritesScreen
 import com.fairswap.feature.favourites.FavouritesViewModel
 import com.fairswap.feature.auth.AuthScreen
 import com.fairswap.feature.auth.AuthViewModel
+import com.fairswap.feature.account.AccountScreen
+import com.fairswap.feature.account.AccountViewModel
+import com.fairswap.feature.account.AccountUiState
 import com.fairswap.core.auth.AuthCallbackCoordinator
 import com.fairswap.feature.discovery.DiscoveryScreen
 import com.fairswap.feature.discovery.DiscoveryViewModel
@@ -60,6 +68,12 @@ fun FairSwapApp(
 ) {
     val backStack = rememberNavBackStack(DiscoveryRoute)
     val pendingNavigation = callbacks.pendingNavigation.collectAsStateWithLifecycle().value
+    val sessionStatus = supabase.auth.sessionStatus.collectAsStateWithLifecycle().value
+    val liveSessionUserId = when (val status = sessionStatus) {
+        is SessionStatus.Authenticated -> status.session.user?.id
+        is SessionStatus.RefreshFailure -> supabase.auth.currentSessionOrNull()?.user?.id
+        is SessionStatus.NotAuthenticated, SessionStatus.Initializing -> null
+    }
     val scope = rememberCoroutineScope()
     val favouriteSnapshot = favouriteStore.state.collectAsStateWithLifecycle().value
     var favouriteError by remember { mutableStateOf<String?>(null) }
@@ -181,23 +195,70 @@ fun FairSwapApp(
                     LaunchedEffect(currentUser) {
                         favouriteStore.reconcile(currentUser)
                     }
-                    AuthScreen(
-                        uiState = authState,
-                        onBrowse = { backStack.removeLastOrNull() },
-                        onShowSignIn = authViewModel::showSignIn,
-                        onShowSignUp = authViewModel::showSignUp,
-                        onShowForgotPassword = authViewModel::showForgotPassword,
-                        onSignIn = authViewModel::signIn,
-                        onSignUp = authViewModel::signUp,
-                        onRequestPasswordReset = authViewModel::requestPasswordReset,
-                        onSetNewPassword = authViewModel::setNewPassword,
-                        onReacceptPolicies = authViewModel::reacceptPolicies,
-                        onSignOut = authViewModel::signOut,
-                        onFavourites = { if (backStack.lastOrNull() != FavouritesRoute) backStack.add(FavouritesRoute) },
-                    )
+                    val identityGate = authState.gate is com.fairswap.core.auth.AuthGate.SignedIn ||
+                        authState.gate is com.fairswap.core.auth.AuthGate.PolicyReviewRequired
+                    val sessionAligned = !identityGate || accountGateSessionMatches(currentUser, liveSessionUserId)
+                    LaunchedEffect(authViewModel, currentUser, authState.gate, authState.isLoading, authState.isInitializing, sessionStatus) {
+                        if (authState.isLoading || authState.isInitializing) return@LaunchedEffect
+                        val mismatch = when (authState.gate) {
+                            is com.fairswap.core.auth.AuthGate.SignedIn,
+                            is com.fairswap.core.auth.AuthGate.PolicyReviewRequired -> !accountGateSessionMatches(currentUser, liveSessionUserId)
+                            com.fairswap.core.auth.AuthGate.SignedOut -> liveSessionUserId != null
+                            else -> false
+                        }
+                        if (mismatch) authViewModel.refresh()
+                    }
+                    if (!sessionAligned) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    } else if (authState.gate is com.fairswap.core.auth.AuthGate.SignedIn && currentUser != null) {
+                        val accountViewModel: AccountViewModel = hiltViewModel()
+                        val storedAccountState = accountViewModel.state.collectAsStateWithLifecycle().value
+                        val accountState = storedAccountState.takeIf { it.userId == currentUser }
+                            ?: AccountUiState(userId = currentUser, loading = true)
+                        LaunchedEffect(accountViewModel, currentUser, authState.gate) {
+                            accountViewModel.onUserChanged(currentUser)
+                            accountViewModel.refresh()
+                        }
+                        LaunchedEffect(accountViewModel, authViewModel) {
+                            accountViewModel.events.collect { event ->
+                                when (event) {
+                                    com.fairswap.feature.account.AccountEvent.AuthRequired,
+                                    com.fairswap.feature.account.AccountEvent.PolicyReviewRequired,
+                                    com.fairswap.feature.account.AccountEvent.Restricted -> authViewModel.refresh()
+                                }
+                            }
+                        }
+                        AccountScreen(
+                            state = accountState,
+                            onEdit = accountViewModel::beginEditing,
+                            onCancel = accountViewModel::cancelEditing,
+                            onFormChange = accountViewModel::updateForm,
+                            onSave = accountViewModel::save,
+                            onRetry = accountViewModel::retry,
+                            onFavourites = { if (backStack.lastOrNull() != FavouritesRoute) backStack.add(FavouritesRoute) },
+                            onSignOut = authViewModel::signOut,
+                        )
+                    } else {
+                        AuthScreen(
+                            uiState = authState,
+                            onBrowse = { backStack.removeLastOrNull() },
+                            onShowSignIn = authViewModel::showSignIn,
+                            onShowSignUp = authViewModel::showSignUp,
+                            onShowForgotPassword = authViewModel::showForgotPassword,
+                            onSignIn = authViewModel::signIn,
+                            onSignUp = authViewModel::signUp,
+                            onRequestPasswordReset = authViewModel::requestPasswordReset,
+                            onSetNewPassword = authViewModel::setNewPassword,
+                            onReacceptPolicies = authViewModel::reacceptPolicies,
+                            onSignOut = authViewModel::signOut,
+                        )
+                    }
                 }
                 else -> error("Unknown navigation key: $key")
             }
         },
     )
 }
+
+internal fun accountGateSessionMatches(gateUserId: String?, liveSessionUserId: String?): Boolean =
+    gateUserId == liveSessionUserId
