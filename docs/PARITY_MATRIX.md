@@ -9,7 +9,7 @@
 | Password recovery | Complete | Complete | Android-1B |
 | Policy acceptance / 18+ | Complete | Complete | Android-1A |
 | Google sign-in | Complete | Cancelled for Android | N/A |
-| Profile | Complete | Account summary only; profile editor pending | Android-3B |
+| Profile | Complete | Complete | Android-3B |
 | Public discovery | Complete | Complete | Android-2A |
 | Listing detail / seller profile | Complete | Complete | Android-2B |
 | Favourites | Complete | Complete | Android-3A |
