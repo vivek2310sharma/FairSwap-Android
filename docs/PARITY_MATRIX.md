@@ -13,7 +13,7 @@
 | Public discovery | Complete | Complete | Android-2A |
 | Listing detail / seller profile | Complete | Complete | Android-2B |
 | Favourites | Complete | Complete | Android-3A |
-| Seller listing CRUD/lifecycle | Complete | Not started | Android-4 |
+| Seller listing CRUD/lifecycle | Complete | Complete — Android-4A (Staging acceptance passed: My Listings dashboard, lifecycle Renew, expired -> pending_review, renewal_count increment, revision preservation) | Android-4A |
 | Listing media pipeline | Complete on Web trusted path | Blocked on mobile-safe media boundary | Android-5 |
 | Messaging / Realtime | Complete | Not started | Android-6 |
 | In-app notifications | Complete | Not started | Android-6 |

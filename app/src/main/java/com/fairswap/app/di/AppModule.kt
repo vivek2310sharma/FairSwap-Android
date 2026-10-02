@@ -22,6 +22,9 @@ import com.fairswap.core.favourites.FavouritesGateway
 import com.fairswap.core.favourites.FavouritesRepository
 import com.fairswap.core.favourites.FavouriteStateStore
 import com.fairswap.core.favourites.SupabaseFavouritesGateway
+import com.fairswap.core.sellerlistings.SellerListingGateway
+import com.fairswap.core.sellerlistings.SellerListingRepository
+import com.fairswap.core.sellerlistings.SupabaseSellerListingGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -125,4 +128,22 @@ object AppModule {
         callbacks: AuthCallbackConfig,
         recoveryState: RecoveryStateStore,
     ): AuthRepository = AuthRepository(supabase, callbacks, recoveryState)
+
+    @Provides
+    @Singleton
+    fun provideSellerSessionOwner(): com.fairswap.core.sellerlistings.SellerSessionOwner =
+        com.fairswap.core.sellerlistings.SellerSessionOwner()
+
+    @Provides
+    @Singleton
+    fun provideSellerListingGateway(supabase: SupabaseClient): SellerListingGateway =
+        SupabaseSellerListingGateway(supabase)
+
+    @Provides
+    @Singleton
+    fun provideSellerListingRepository(
+        gateway: SellerListingGateway,
+        sessionOwner: com.fairswap.core.sellerlistings.SellerSessionOwner,
+    ): SellerListingRepository =
+        SellerListingRepository(gateway, sessionOwner)
 }
