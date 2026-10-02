@@ -31,6 +31,7 @@ fun AccountScreen(
     onSave: () -> Unit,
     onRetry: () -> Unit,
     onFavourites: () -> Unit,
+    onMyListings: () -> Unit = {},
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -71,6 +72,7 @@ fun AccountScreen(
                     else OutlinedButton(onClick = onRetry) { Text("Refresh") }
                 }
             }
+            OutlinedButton(onClick = onMyListings, modifier = Modifier.fillMaxWidth()) { Text("My Listings") }
             OutlinedButton(onClick = onFavourites, modifier = Modifier.fillMaxWidth()) { Text("Saved Favourites") }
             OutlinedButton(onClick = onSignOut, enabled = !state.saving, modifier = Modifier.fillMaxWidth()) { Text("Sign Out") }
         }

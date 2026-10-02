@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,15 +34,27 @@ import com.fairswap.feature.account.AccountScreen
 import com.fairswap.feature.account.AccountViewModel
 import com.fairswap.feature.account.AccountUiState
 import com.fairswap.core.auth.AuthCallbackCoordinator
+import com.fairswap.core.auth.AuthGate
 import com.fairswap.feature.discovery.DiscoveryScreen
 import com.fairswap.feature.discovery.DiscoveryViewModel
 import com.fairswap.feature.listingdetail.ListingDetailScreen
 import com.fairswap.feature.listingdetail.ListingDetailViewModel
 import com.fairswap.feature.sellerprofile.SellerProfileScreen
 import com.fairswap.feature.sellerprofile.SellerProfileViewModel
+import com.fairswap.feature.sellerlistings.MyListingsScreen
+import com.fairswap.feature.sellerlistings.MyListingsViewModel
+import com.fairswap.feature.sellerlistings.MyListingsEvent
+import com.fairswap.feature.sellerlistings.SellerListingEditorScreen
+import com.fairswap.feature.sellerlistings.SellerListingEditorViewModel
+import com.fairswap.feature.sellerlistings.SellerListingEditorEvent
+import com.fairswap.core.sellerlistings.SellerListingRepository
+import com.fairswap.core.sellerlistings.SellerSession
+import com.fairswap.core.sellerlistings.canRenderSellerState
+import com.fairswap.feature.account.AccountEvent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import java.util.UUID
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -59,11 +72,40 @@ data class SellerProfileRoute(val sellerId: String) : NavKey
 @Serializable
 data object FavouritesRoute : NavKey
 
+@Serializable
+data object MyListingsRoute : NavKey
+
+@Serializable
+data class CreateSellerListingRoute(val entryId: String) : NavKey
+
+@Serializable
+data class EditSellerListingRoute(
+    val listingId: String,
+    val entryId: String,
+) : NavKey
+
+internal fun canConsumeSellerEditorEvent(
+    eventSession: SellerSession,
+    eventEntryId: String,
+    activeSession: SellerSession?,
+    liveUserId: String?,
+    topRoute: NavKey?,
+): Boolean {
+    if (activeSession == null || liveUserId == null) return false
+    if (eventSession != activeSession || activeSession.userId != liveUserId) return false
+    return when (topRoute) {
+        is CreateSellerListingRoute -> topRoute.entryId == eventEntryId
+        is EditSellerListingRoute -> topRoute.entryId == eventEntryId
+        else -> false
+    }
+}
+
 @Composable
 fun FairSwapApp(
     callbacks: AuthCallbackCoordinator,
     favouritesRepository: FavouritesRepository,
     favouriteStore: FavouriteStateStore,
+    sellerRepository: SellerListingRepository,
     supabase: SupabaseClient,
 ) {
     val backStack = rememberNavBackStack(DiscoveryRoute)
@@ -74,6 +116,8 @@ fun FairSwapApp(
         is SessionStatus.RefreshFailure -> supabase.auth.currentSessionOrNull()?.user?.id
         is SessionStatus.NotAuthenticated, SessionStatus.Initializing -> null
     }
+    val activeSellerSession = sellerRepository.sessionOwner.session.collectAsStateWithLifecycle().value
+
     val scope = rememberCoroutineScope()
     val favouriteSnapshot = favouriteStore.state.collectAsStateWithLifecycle().value
     var favouriteError by remember { mutableStateOf<String?>(null) }
@@ -81,8 +125,15 @@ fun FairSwapApp(
     LaunchedEffect(supabase) {
         supabase.auth.sessionStatus.collect { status ->
             when (status) {
-                is SessionStatus.Authenticated -> favouriteStore.reconcile(status.session.user?.id)
-                is SessionStatus.NotAuthenticated, SessionStatus.Initializing -> favouriteStore.reconcile(null)
+                is SessionStatus.Authenticated -> {
+                    val userId = status.session.user?.id
+                    favouriteStore.reconcile(userId)
+                    sellerRepository.sessionOwner.updateSession(userId)
+                }
+                is SessionStatus.NotAuthenticated, SessionStatus.Initializing -> {
+                    favouriteStore.reconcile(null)
+                    sellerRepository.sessionOwner.updateSession(null)
+                }
                 is SessionStatus.RefreshFailure -> Unit
             }
         }
@@ -188,29 +239,29 @@ fun FairSwapApp(
                     val authViewModel: AuthViewModel = hiltViewModel()
                     val authState = authViewModel.uiState
                     val currentUser = when (val gate = authState.gate) {
-                        is com.fairswap.core.auth.AuthGate.SignedIn -> gate.account.userId
-                        is com.fairswap.core.auth.AuthGate.PolicyReviewRequired -> gate.account.userId
+                        is AuthGate.SignedIn -> gate.account.userId
+                        is AuthGate.PolicyReviewRequired -> gate.account.userId
                         else -> null
                     }
                     LaunchedEffect(currentUser) {
                         favouriteStore.reconcile(currentUser)
                     }
-                    val identityGate = authState.gate is com.fairswap.core.auth.AuthGate.SignedIn ||
-                        authState.gate is com.fairswap.core.auth.AuthGate.PolicyReviewRequired
+                    val identityGate = authState.gate is AuthGate.SignedIn ||
+                        authState.gate is AuthGate.PolicyReviewRequired
                     val sessionAligned = !identityGate || accountGateSessionMatches(currentUser, liveSessionUserId)
                     LaunchedEffect(authViewModel, currentUser, authState.gate, authState.isLoading, authState.isInitializing, sessionStatus) {
                         if (authState.isLoading || authState.isInitializing) return@LaunchedEffect
                         val mismatch = when (authState.gate) {
-                            is com.fairswap.core.auth.AuthGate.SignedIn,
-                            is com.fairswap.core.auth.AuthGate.PolicyReviewRequired -> !accountGateSessionMatches(currentUser, liveSessionUserId)
-                            com.fairswap.core.auth.AuthGate.SignedOut -> liveSessionUserId != null
+                            is AuthGate.SignedIn,
+                            is AuthGate.PolicyReviewRequired -> !accountGateSessionMatches(currentUser, liveSessionUserId)
+                            AuthGate.SignedOut -> liveSessionUserId != null
                             else -> false
                         }
                         if (mismatch) authViewModel.refresh()
                     }
                     if (!sessionAligned) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                    } else if (authState.gate is com.fairswap.core.auth.AuthGate.SignedIn && currentUser != null) {
+                    } else if (authState.gate is AuthGate.SignedIn && currentUser != null) {
                         val accountViewModel: AccountViewModel = hiltViewModel()
                         val storedAccountState = accountViewModel.state.collectAsStateWithLifecycle().value
                         val accountState = storedAccountState.takeIf { it.userId == currentUser }
@@ -222,9 +273,9 @@ fun FairSwapApp(
                         LaunchedEffect(accountViewModel, authViewModel) {
                             accountViewModel.events.collect { event ->
                                 when (event) {
-                                    com.fairswap.feature.account.AccountEvent.AuthRequired,
-                                    com.fairswap.feature.account.AccountEvent.PolicyReviewRequired,
-                                    com.fairswap.feature.account.AccountEvent.Restricted -> authViewModel.refresh()
+                                    AccountEvent.AuthRequired,
+                                    AccountEvent.PolicyReviewRequired,
+                                    AccountEvent.Restricted -> authViewModel.refresh()
                                 }
                             }
                         }
@@ -236,6 +287,7 @@ fun FairSwapApp(
                             onSave = accountViewModel::save,
                             onRetry = accountViewModel::retry,
                             onFavourites = { if (backStack.lastOrNull() != FavouritesRoute) backStack.add(FavouritesRoute) },
+                            onMyListings = { if (backStack.lastOrNull() != MyListingsRoute) backStack.add(MyListingsRoute) },
                             onSignOut = authViewModel::signOut,
                         )
                     } else {
@@ -251,6 +303,150 @@ fun FairSwapApp(
                             onSetNewPassword = authViewModel::setNewPassword,
                             onReacceptPolicies = authViewModel::reacceptPolicies,
                             onSignOut = authViewModel::signOut,
+                        )
+                    }
+                }
+                MyListingsRoute -> NavEntry(key) {
+                    val viewModel: MyListingsViewModel = hiltViewModel()
+                    val state = viewModel.state.collectAsStateWithLifecycle().value
+                    LaunchedEffect(activeSellerSession) {
+                        viewModel.bind(activeSellerSession)
+                        if (liveSessionUserId == null && backStack.lastOrNull() != AuthRoute) {
+                            backStack.add(AuthRoute)
+                        }
+                    }
+                    LaunchedEffect(viewModel, activeSellerSession) {
+                        viewModel.events.collect { event ->
+                            if (event.session == activeSellerSession && activeSellerSession?.userId == liveSessionUserId) {
+                                when (event) {
+                                    is MyListingsEvent.AuthRequired,
+                                    is MyListingsEvent.PolicyReviewRequired -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                }
+                            }
+                        }
+                    }
+                    if (!canRenderSellerState(state.session, activeSellerSession, liveSessionUserId)) {
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        MyListingsScreen(
+                            state = state,
+                            onBack = { backStack.removeLastOrNull() },
+                            onCreateListing = { backStack.add(CreateSellerListingRoute(entryId = UUID.randomUUID().toString())) },
+                            onEditListing = { id -> backStack.add(EditSellerListingRoute(listingId = id, entryId = UUID.randomUUID().toString())) },
+                            onRefresh = viewModel::refresh,
+                            onLifecycleAction = viewModel::executeLifecycleAction,
+                            onClearMessages = viewModel::clearMessages,
+                        )
+                    }
+                }
+                is CreateSellerListingRoute -> NavEntry(key) {
+                    val viewModel: SellerListingEditorViewModel = hiltViewModel()
+                    val state = viewModel.state.collectAsStateWithLifecycle().value
+                    val currentTopEntryState = rememberUpdatedState(backStack.lastOrNull())
+                    val currentLiveUserState = rememberUpdatedState(liveSessionUserId)
+                    val currentActiveSessionState = rememberUpdatedState(activeSellerSession)
+
+                    LaunchedEffect(activeSellerSession, key.entryId) {
+                        viewModel.bind(activeSellerSession, listingId = null, entryId = key.entryId)
+                        if (liveSessionUserId == null && backStack.lastOrNull() != AuthRoute) {
+                            backStack.add(AuthRoute)
+                        }
+                    }
+                    LaunchedEffect(viewModel) {
+                        viewModel.events.collect { event ->
+                            if (canConsumeSellerEditorEvent(
+                                    event.session,
+                                    event.entryId,
+                                    currentActiveSessionState.value,
+                                    currentLiveUserState.value,
+                                    currentTopEntryState.value,
+                                )
+                            ) {
+                                when (event) {
+                                    is SellerListingEditorEvent.AuthRequired,
+                                    is SellerListingEditorEvent.PolicyReviewRequired -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    is SellerListingEditorEvent.Saved,
+                                    is SellerListingEditorEvent.Submitted -> backStack.removeLastOrNull()
+                                }
+                            }
+                        }
+                    }
+                    if (!canRenderSellerState(state.session, activeSellerSession, liveSessionUserId)) {
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        SellerListingEditorScreen(
+                            state = state,
+                            onBack = { backStack.removeLastOrNull() },
+                            onTitleChange = viewModel::updateTitle,
+                            onCategoryChange = viewModel::updateCategory,
+                            onDescriptionChange = viewModel::updateDescription,
+                            onConditionChange = viewModel::updateCondition,
+                            onPriceTypeChange = viewModel::updatePriceType,
+                            onPriceRupeesChange = viewModel::updatePriceRupees,
+                            onCityChange = viewModel::updateCity,
+                            onLocalityChange = viewModel::updateLocality,
+                            onPinCodeChange = viewModel::updatePinCode,
+                            onAttributeChange = viewModel::updateCategoryAttribute,
+                            onSaveDraft = { viewModel.saveDraft(entryId = key.entryId) },
+                            onSubmitListing = { viewModel.submitListing(entryId = key.entryId) },
+                            onClearError = viewModel::clearErrorMessage,
+                            onRetryInitialization = viewModel::retryInitialization,
+                            onRetryCategoryAttributes = viewModel::retryCategoryAttributes,
+                            onRetryLocalities = viewModel::retryLocalities,
+                        )
+                    }
+                }
+                is EditSellerListingRoute -> NavEntry(key) {
+                    val viewModel: SellerListingEditorViewModel = hiltViewModel()
+                    val state = viewModel.state.collectAsStateWithLifecycle().value
+                    val currentTopEntryState = rememberUpdatedState(backStack.lastOrNull())
+                    val currentLiveUserState = rememberUpdatedState(liveSessionUserId)
+                    val currentActiveSessionState = rememberUpdatedState(activeSellerSession)
+
+                    LaunchedEffect(activeSellerSession, key.entryId) {
+                        viewModel.bind(activeSellerSession, listingId = key.listingId, entryId = key.entryId)
+                        if (liveSessionUserId == null && backStack.lastOrNull() != AuthRoute) {
+                            backStack.add(AuthRoute)
+                        }
+                    }
+                    LaunchedEffect(viewModel) {
+                        viewModel.events.collect { event ->
+                            if (canConsumeSellerEditorEvent(
+                                    event.session,
+                                    event.entryId,
+                                    currentActiveSessionState.value,
+                                    currentLiveUserState.value,
+                                    currentTopEntryState.value,
+                                )
+                            ) {
+                                when (event) {
+                                    is SellerListingEditorEvent.AuthRequired,
+                                    is SellerListingEditorEvent.PolicyReviewRequired -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    is SellerListingEditorEvent.Saved,
+                                    is SellerListingEditorEvent.Submitted -> backStack.removeLastOrNull()
+                                }
+                            }
+                        }
+                    }
+                    if (!canRenderSellerState(state.session, activeSellerSession, liveSessionUserId)) {
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        SellerListingEditorScreen(
+                            state = state,
+                            onBack = { backStack.removeLastOrNull() },
+                            onTitleChange = viewModel::updateTitle,
+                            onCategoryChange = viewModel::updateCategory,
+                            onDescriptionChange = viewModel::updateDescription,
+                            onConditionChange = viewModel::updateCondition,
+                            onPriceTypeChange = viewModel::updatePriceType,
+                            onPriceRupeesChange = viewModel::updatePriceRupees,
+                            onCityChange = viewModel::updateCity,
+                            onLocalityChange = viewModel::updateLocality,
+                            onPinCodeChange = viewModel::updatePinCode,
+                            onAttributeChange = viewModel::updateCategoryAttribute,
+                            onSaveDraft = { viewModel.saveDraft(entryId = key.entryId) },
+                            onSubmitListing = { viewModel.submitListing(entryId = key.entryId) },
+                            onClearError = viewModel::clearErrorMessage,
                         )
                     }
                 }

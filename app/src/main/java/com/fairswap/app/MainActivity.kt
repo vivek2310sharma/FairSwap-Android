@@ -14,6 +14,7 @@ import com.fairswap.core.auth.CallbackClassification
 import com.fairswap.core.auth.RecoveryStateStore
 import com.fairswap.core.favourites.FavouritesRepository
 import com.fairswap.core.favourites.FavouriteStateStore
+import com.fairswap.core.sellerlistings.SellerListingRepository
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.handleDeeplinks
@@ -27,6 +28,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var recoveryState: RecoveryStateStore
     @Inject lateinit var favouritesRepository: FavouritesRepository
     @Inject lateinit var favouriteStateStore: FavouriteStateStore
+    @Inject lateinit var sellerRepository: SellerListingRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FairSwapTheme {
-                FairSwapApp(callbackCoordinator, favouritesRepository, favouriteStateStore, supabase)
+                FairSwapApp(callbackCoordinator, favouritesRepository, favouriteStateStore, sellerRepository, supabase)
             }
         }
         handleAuthCallback(intent)
