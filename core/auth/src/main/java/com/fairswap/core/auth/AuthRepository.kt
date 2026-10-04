@@ -3,6 +3,8 @@ package com.fairswap.core.auth
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.OTP
+import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -10,12 +12,24 @@ import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class AuthRepository(
+interface AuthRepository {
+    suspend fun bootstrap(): AuthGate
+    suspend fun signIn(email: String, password: String): AuthGate
+    suspend fun signUp(input: SignUpInput): AuthGate
+    suspend fun requestPasswordReset(email: String): AuthGate
+    suspend fun setNewPassword(password: String, confirmation: String): AuthGate
+    suspend fun reacceptPolicies(): AuthGate
+    suspend fun signOut(): AuthGate
+    suspend fun requestEmailOtp(email: String): EmailOtpRequestResult
+    suspend fun verifyEmailOtp(email: String, token: String): EmailOtpVerificationResult
+}
+
+class SupabaseAuthRepository(
     private val supabase: SupabaseClient,
     private val callbacks: AuthCallbackConfig,
     private val recoveryState: RecoveryStateStore,
-) {
-    suspend fun bootstrap(): AuthGate {
+) : AuthRepository {
+    override suspend fun bootstrap(): AuthGate {
         supabase.auth.awaitInitialization()
         val session = supabase.auth.currentSessionOrNull() ?: run {
             recoveryState.isPending = false
@@ -64,14 +78,84 @@ class AuthRepository(
         }
     }
 
-    suspend fun signIn(email: String, password: String): AuthGate {
+    override suspend fun requestEmailOtp(email: String): EmailOtpRequestResult {
+        AuthValidation.validateEmail(email)?.let {
+            return EmailOtpRequestResult.InvalidEmail
+        }
+        val normalizedEmail = email.trim().lowercase()
+        return try {
+            supabase.auth.signInWith(
+                OTP,
+                redirectUrl = null,
+            ) {
+                this.email = normalizedEmail
+                createUser = false
+            }
+            EmailOtpRequestResult.Acknowledged
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+
+            val isNetwork = e is io.ktor.client.plugins.HttpRequestTimeoutException || e is java.net.UnknownHostException || e is java.net.ConnectException
+            val restEx = e as? io.github.jan.supabase.exceptions.RestException
+            val errorCode = (e as? io.github.jan.supabase.auth.exception.AuthRestException)?.errorCode?.value ?: restEx?.error ?: ""
+            val status = restEx?.statusCode
+
+            AuthErrorClassifier.classifyOtpRequestError(errorCode, status, isNetwork)
+        }
+    }
+
+    override suspend fun verifyEmailOtp(email: String, token: String): EmailOtpVerificationResult {
+        AuthValidation.validateOtp(token)?.let { return EmailOtpVerificationResult.InvalidInput }
+        val normalizedEmail = email.trim().lowercase()
+        return try {
+            val verifyResult = supabase.auth.verifyEmailOtp(
+                type = OtpType.Email.EMAIL,
+                email = normalizedEmail,
+                token = token,
+            )
+            if (verifyResult !is io.github.jan.supabase.auth.OtpVerifyResult.Authenticated) {
+                return EmailOtpVerificationResult.IdentityVerificationFailed
+            }
+
+            // Verify current session user matches the requested email
+            val currentUser = try {
+                supabase.auth.retrieveUserForCurrentSession(updateSession = false)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                null
+            }
+
+            if (currentUser == null || currentUser.id != verifyResult.session.user?.id ||
+                (currentUser.email != null && currentUser.email?.lowercase() != normalizedEmail)) {
+                try {
+                    supabase.auth.signOut() // local cleanup
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                }
+                return EmailOtpVerificationResult.IdentityVerificationFailed
+            }
+
+            val gate = bootstrap()
+            EmailOtpVerificationResult.Authenticated(gate)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            val isNetwork = e is io.ktor.client.plugins.HttpRequestTimeoutException || e is java.net.UnknownHostException || e is java.net.ConnectException
+            val restEx = e as? io.github.jan.supabase.exceptions.RestException
+            val errorCode = (e as? io.github.jan.supabase.auth.exception.AuthRestException)?.errorCode?.value ?: restEx?.error ?: ""
+            val status = restEx?.statusCode
+
+            AuthErrorClassifier.classifyOtpVerificationError(errorCode, status, isNetwork)
+        }
+    }
+
+    override suspend fun signIn(email: String, password: String): AuthGate {
         AuthValidation.validateSignIn(email, password)?.let {
             return AuthGate.Failure(it)
         }
 
         return runCatching {
             supabase.auth.signInWith(Email) {
-                this.email = email.trim()
+                this.email = email.trim().lowercase()
                 this.password = password
             }
             recoveryState.expectedCallbackKind = null
@@ -85,7 +169,7 @@ class AuthRepository(
         )
     }
 
-    suspend fun signUp(input: SignUpInput): AuthGate {
+    override suspend fun signUp(input: SignUpInput): AuthGate {
         AuthValidation.validateSignUp(input)?.let {
             return AuthGate.Failure(it)
         }
@@ -111,7 +195,7 @@ class AuthRepository(
         }
     }
 
-    suspend fun requestPasswordReset(email: String): AuthGate {
+    override suspend fun requestPasswordReset(email: String): AuthGate {
         AuthValidation.validateResetEmail(email)?.let { return AuthGate.Failure(it) }
         return runCatching {
             supabase.auth.resetPasswordForEmail(
@@ -123,7 +207,7 @@ class AuthRepository(
         }.getOrElse { AuthGate.ResetEmailSent }
     }
 
-    suspend fun setNewPassword(password: String, confirmation: String): AuthGate {
+    override suspend fun setNewPassword(password: String, confirmation: String): AuthGate {
         AuthValidation.validateNewPassword(password, confirmation)?.let { return AuthGate.Failure(it) }
         if (!recoveryState.isPending || supabase.auth.currentSessionOrNull() == null) {
             return AuthGate.Failure("Recovery session expired. Request a new password reset email.")
@@ -137,7 +221,7 @@ class AuthRepository(
         )
     }
 
-    suspend fun reacceptPolicies(): AuthGate {
+    override suspend fun reacceptPolicies(): AuthGate {
         return runCatching {
             supabase.postgrest.rpc(
                 function = "record_policy_reacceptance",
@@ -156,7 +240,7 @@ class AuthRepository(
         )
     }
 
-    suspend fun signOut(): AuthGate {
+    override suspend fun signOut(): AuthGate {
         return runCatching {
             supabase.auth.signOut()
             recoveryState.isPending = false

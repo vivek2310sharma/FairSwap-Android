@@ -2,6 +2,7 @@ package com.fairswap.app.di
 
 import com.fairswap.app.BuildConfig
 import com.fairswap.core.auth.AuthRepository
+import com.fairswap.core.auth.SupabaseAuthRepository
 import com.fairswap.core.account.AccountGateway
 import com.fairswap.core.account.AccountRepository
 import com.fairswap.core.account.SupabaseAccountGateway
@@ -127,7 +128,7 @@ object AppModule {
         supabase: SupabaseClient,
         callbacks: AuthCallbackConfig,
         recoveryState: RecoveryStateStore,
-    ): AuthRepository = AuthRepository(supabase, callbacks, recoveryState)
+    ): AuthRepository = SupabaseAuthRepository(supabase, callbacks, recoveryState)
 
     @Provides
     @Singleton

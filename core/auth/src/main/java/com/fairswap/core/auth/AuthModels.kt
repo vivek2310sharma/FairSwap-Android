@@ -28,6 +28,23 @@ sealed interface AuthGate {
     data class Failure(val message: String) : AuthGate
 }
 
+sealed interface EmailOtpRequestResult {
+    data object Acknowledged : EmailOtpRequestResult
+    data object RateLimited : EmailOtpRequestResult
+    data object ServiceUnavailable : EmailOtpRequestResult
+    data object ProviderUnavailable : EmailOtpRequestResult
+    data object InvalidEmail : EmailOtpRequestResult
+}
+
+sealed interface EmailOtpVerificationResult {
+    data class Authenticated(val gate: AuthGate) : EmailOtpVerificationResult
+    data object InvalidOrExpiredCode : EmailOtpVerificationResult
+    data object RateLimited : EmailOtpVerificationResult
+    data object ServiceUnavailable : EmailOtpVerificationResult
+    data object IdentityVerificationFailed : EmailOtpVerificationResult
+    data object InvalidInput : EmailOtpVerificationResult
+}
+
 data class ProfileSummary(
     val id: String,
     val displayName: String,
