@@ -61,6 +61,8 @@ fun SellerListingEditorScreen(
     onCityChange: (String?) -> Unit,
     onLocalityChange: (String?) -> Unit,
     onPinCodeChange: (String) -> Unit,
+    onLandmarkChange: (String) -> Unit,
+    onSelectDistrict: (com.fairswap.core.sellerlistings.PincodeDistrict) -> Unit,
     onAttributeChange: (String, JsonPrimitive) -> Unit,
     onSaveDraft: () -> Unit,
     onSubmitListing: () -> Unit,
@@ -68,6 +70,7 @@ fun SellerListingEditorScreen(
     onRetryInitialization: () -> Unit = {},
     onRetryCategoryAttributes: () -> Unit = {},
     onRetryLocalities: () -> Unit = {},
+    onRetryPincodeLookup: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -89,7 +92,7 @@ fun SellerListingEditorScreen(
                     if (state.isSaving || state.isSubmitting) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 16.dp))
                     } else {
-                        TextButton(onClick = onSaveDraft) {
+                        TextButton(onClick = onSaveDraft, enabled = state.isSaveReady) {
                             Text("Save Draft")
                         }
                     }
@@ -281,138 +284,188 @@ fun SellerListingEditorScreen(
                     )
                 }
 
-                // City Selection
-                if (state.citiesEmpty && !state.isEditing) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = "No active locations are currently available for selection.",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                } else {
-                    var cityExpanded by remember { mutableStateOf(false) }
-                    val activeCityMap = state.cities.associate { it.id to it.name }
-                    val selectedCityName = formatUnavailableReferenceLabel(
-                        selectedId = state.input.cityId,
-                        activeItemsNameMap = activeCityMap,
-                        defaultPlaceholder = "Select City",
-                        typeLabel = "city",
-                    )
-
-                    ExposedDropdownMenuBox(
-                        expanded = cityExpanded,
-                        onExpandedChange = { cityExpanded = it },
-                    ) {
-                        OutlinedTextField(
-                            value = selectedCityName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("City") },
-                            isError = state.validationErrors.cityError != null,
-                            supportingText = state.validationErrors.cityError?.let { { Text(it) } },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = cityExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                        )
-                        ExposedDropdownMenu(
-                            expanded = cityExpanded,
-                            onDismissRequest = { cityExpanded = false },
-                        ) {
-                            state.cities.forEach { city ->
-                                DropdownMenuItem(
-                                    text = { Text(city.name) },
-                                    onClick = {
-                                        onCityChange(city.id)
-                                        cityExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Locality Selection or Locality Retry UI
-                if (state.localityLoadFailed) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "Unable to load localities for selected city.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                            )
-                            OutlinedButton(onClick = onRetryLocalities) {
-                                Text("Retry")
-                            }
-                        }
-                    }
-                }
-
-                if (!state.input.cityId.isNullOrBlank() && (state.localities.isNotEmpty() || !state.input.localityId.isNullOrBlank())) {
-                    var localityExpanded by remember { mutableStateOf(false) }
-                    val activeLocalityMap = state.localities.associate { it.id to it.name }
-                    val selectedLocalityName = formatUnavailableReferenceLabel(
-                        selectedId = state.input.localityId,
-                        activeItemsNameMap = activeLocalityMap,
-                        defaultPlaceholder = "Select Locality",
-                        typeLabel = "locality",
-                    )
-
-                    ExposedDropdownMenuBox(
-                        expanded = localityExpanded,
-                        onExpandedChange = { localityExpanded = it },
-                    ) {
-                        OutlinedTextField(
-                            value = selectedLocalityName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Locality") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = localityExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                        )
-                        ExposedDropdownMenu(
-                            expanded = localityExpanded,
-                            onDismissRequest = { localityExpanded = false },
-                        ) {
-                            state.localities.forEach { loc ->
-                                DropdownMenuItem(
-                                    text = { Text(loc.name) },
-                                    onClick = {
-                                        onLocalityChange(loc.id)
-                                        localityExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+                Text("Where is the item?", style = MaterialTheme.typography.titleSmall)
 
                 // PIN Code Input
                 OutlinedTextField(
                     value = state.input.pinCode,
                     onValueChange = onPinCodeChange,
-                    label = { Text("PIN Code (6 digits)") },
+                    label = { Text("PIN Code (6 digits) *") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     isError = state.validationErrors.pinCodeError != null,
                     supportingText = state.validationErrors.pinCodeError?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
+
+                // Pincode UI State
+                when (val pinState = state.pincodeUiState) {
+                    is com.fairswap.feature.sellerlistings.PincodeUiState.Idle -> { }
+                    is com.fairswap.feature.sellerlistings.PincodeUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    is com.fairswap.feature.sellerlistings.PincodeUiState.Error -> {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer), modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = when (pinState.reason) {
+                                        com.fairswap.core.sellerlistings.PincodeLookupFailureReason.INVALID_PINCODE -> "Invalid PIN Code."
+                                        com.fairswap.core.sellerlistings.PincodeLookupFailureReason.PINCODE_NOT_FOUND -> "PIN Code not found."
+                                        com.fairswap.core.sellerlistings.PincodeLookupFailureReason.CONFLICTING_POSTAL_STATES -> "Conflicting state data for this PIN."
+                                        com.fairswap.core.sellerlistings.PincodeLookupFailureReason.PINCODE_ADMIN_DATA_UNAVAILABLE -> "Administrative data unavailable for this PIN."
+                                        com.fairswap.core.sellerlistings.PincodeLookupFailureReason.COMPATIBILITY_CITY_UNAVAILABLE -> "No valid city found for this PIN."
+                                        com.fairswap.core.sellerlistings.PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE -> "Unable to verify PIN Code."
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (pinState.retryable) {
+                                    OutlinedButton(onClick = onRetryPincodeLookup) { Text("Retry") }
+                                }
+                            }
+                        }
+                    }
+                    is com.fairswap.feature.sellerlistings.PincodeUiState.RequiresDistrictChoice -> {
+                        Text("State: ${pinState.state ?: ""}", style = MaterialTheme.typography.bodyMedium)
+
+                        var districtExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = districtExpanded,
+                            onExpandedChange = { districtExpanded = it },
+                        ) {
+                            OutlinedTextField(
+                                value = "Select District",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("District *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = districtExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            )
+                            ExposedDropdownMenu(
+                                expanded = districtExpanded,
+                                onDismissRequest = { districtExpanded = false },
+                            ) {
+                                pinState.districts.forEach { dist ->
+                                    DropdownMenuItem(
+                                        text = { Text(dist.name) },
+                                        onClick = {
+                                            onSelectDistrict(dist)
+                                            districtExpanded = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    is com.fairswap.feature.sellerlistings.PincodeUiState.ResolvedSingleDistrict -> {
+                        Text("State: ${pinState.state ?: ""}", style = MaterialTheme.typography.bodyMedium)
+                        Text("District: ${pinState.district ?: ""}", style = MaterialTheme.typography.bodyMedium)
+
+                        // Locality Selection
+                        if (pinState.localities.isNotEmpty()) {
+                            var localityExpanded by remember { mutableStateOf(false) }
+                            val activeLocalityMap = pinState.localities.associate { it.id to it.name }
+                            val selectedLocalityName = formatUnavailableReferenceLabel(
+                                selectedId = state.input.localityId,
+                                activeItemsNameMap = activeLocalityMap,
+                                defaultPlaceholder = "Select Area / Locality (Optional)",
+                                typeLabel = "locality",
+                            )
+
+                            ExposedDropdownMenuBox(
+                                expanded = localityExpanded,
+                                onExpandedChange = { localityExpanded = it },
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedLocalityName,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Area / Locality") },
+                                    isError = state.validationErrors.localityError != null,
+                                    supportingText = state.validationErrors.localityError?.let { { Text(it) } },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = localityExpanded) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = localityExpanded,
+                                    onDismissRequest = { localityExpanded = false },
+                                ) {
+                                    pinState.localities.forEach { loc ->
+                                        DropdownMenuItem(
+                                            text = { Text(loc.name) },
+                                            onClick = {
+                                                onLocalityChange(loc.id)
+                                                localityExpanded = false
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    is com.fairswap.feature.sellerlistings.PincodeUiState.ResolvedDistrict -> {
+                        Text("State: ${pinState.state ?: ""}", style = MaterialTheme.typography.bodyMedium)
+                        Text("District: ${pinState.district ?: ""}", style = MaterialTheme.typography.bodyMedium)
+
+                        // Locality Selection
+                        if (pinState.localities.isNotEmpty()) {
+                            var localityExpanded by remember { mutableStateOf(false) }
+                            val activeLocalityMap = pinState.localities.associate { it.id to it.name }
+                            val selectedLocalityName = formatUnavailableReferenceLabel(
+                                selectedId = state.input.localityId,
+                                activeItemsNameMap = activeLocalityMap,
+                                defaultPlaceholder = "Select Area / Locality (Optional)",
+                                typeLabel = "locality",
+                            )
+
+                            ExposedDropdownMenuBox(
+                                expanded = localityExpanded,
+                                onExpandedChange = { localityExpanded = it },
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedLocalityName,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Area / Locality") },
+                                    isError = state.validationErrors.localityError != null,
+                                    supportingText = state.validationErrors.localityError?.let { { Text(it) } },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = localityExpanded) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = localityExpanded,
+                                    onDismissRequest = { localityExpanded = false },
+                                ) {
+                                    pinState.localities.forEach { loc ->
+                                        DropdownMenuItem(
+                                            text = { Text(loc.name) },
+                                            onClick = {
+                                                onLocalityChange(loc.id)
+                                                localityExpanded = false
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Landmark
+                OutlinedTextField(
+                    value = state.input.landmark,
+                    onValueChange = onLandmarkChange,
+                    label = { Text("Landmark (Optional)") },
+                    isError = state.validationErrors.landmarkError != null,
+                    supportingText = state.validationErrors.landmarkError?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+
+                Text("Only your approximate area is shown publicly.\nYou can decide the exact pickup location later with the buyer.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 // Dynamic Category Attributes
                 if (state.metadataLoadFailed) {

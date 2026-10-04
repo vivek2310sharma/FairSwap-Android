@@ -34,6 +34,9 @@ private class FakeSellerListingGateway(
 ) : SellerListingGateway {
     val listings = mutableMapOf<String, SellerListingRowDto>()
     var transitionCallCount = 0
+
+    override suspend fun lookupPincode(pinCode: String): com.fairswap.core.sellerlistings.PincodeLookupResponseDto = com.fairswap.core.sellerlistings.PincodeLookupResponseDto(success = true, pincode = pinCode, cityId = "66666666-7777-8888-9999-000000000000")
+
     var fetchListingsCallCount = 0
 
     override suspend fun currentUserId(): String? = userId
@@ -406,6 +409,7 @@ class MyListingsViewModelTest {
             title = "Updated Title From Editor",
             categoryId = "11111111-2222-3333-4444-555555555555",
             cityId = "66666666-7777-8888-9999-000000000000",
+                pinCode = "123456",
         )
         val saveRes = repo.saveEdit(validUuid1, validInput, sessionA)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -455,6 +459,7 @@ class MyListingsViewModelTest {
             title = "Valid Title",
             categoryId = "11111111-2222-3333-4444-555555555555",
             cityId = "66666666-7777-8888-9999-000000000000",
+                pinCode = "123456",
         )
 
         // Try saving with stale session
@@ -518,6 +523,7 @@ class MyListingsViewModelTest {
             title = "Durable Invalidation Title",
             categoryId = "11111111-2222-3333-4444-555555555555",
             cityId = "66666666-7777-8888-9999-000000000000",
+                pinCode = "123456",
         )
         val saveRes = repo.saveEdit(validUuid1, validInput, sessionA)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -587,6 +593,7 @@ class MyListingsViewModelTest {
             title = "Shared Repo Title",
             categoryId = "11111111-2222-3333-4444-555555555555",
             cityId = "66666666-7777-8888-9999-000000000000",
+                pinCode = "123456",
         )
         repo.saveEdit(validUuid1, validInput, sessionA)
         testDispatcher.scheduler.advanceUntilIdle()

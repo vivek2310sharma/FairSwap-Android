@@ -6,8 +6,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 class SellerListingValidationTest {
 
@@ -28,16 +26,16 @@ class SellerListingValidationTest {
     }
 
     @Test
-    fun `draft validation - city is required for draft persistence`() {
+    fun `draft validation - city is optional for local editor state but if present must be valid UUID`() {
         val noCity = SellerListingInput(title = "Valid Title", categoryId = validUuid, cityId = null)
         val err = SellerListingValidation.validateDraft(noCity)
-        assertEquals("Select a valid city.", err.cityError)
-        assertFalse(err.isValid)
+        assertNull(err.cityError)
+        assertTrue(err.isValid)
 
-        val withCity = noCity.copy(cityId = validCityUuid)
-        val validErr = SellerListingValidation.validateDraft(withCity)
-        assertNull(validErr.cityError)
-        assertTrue(validErr.isValid)
+        val invalidCity = noCity.copy(cityId = "invalid-uuid")
+        val invalidErr = SellerListingValidation.validateDraft(invalidCity)
+        assertEquals("Select a valid city.", invalidErr.cityError)
+        assertFalse(invalidErr.isValid)
     }
 
     @Test
@@ -58,6 +56,7 @@ class SellerListingValidationTest {
             title = "Valid Title",
             categoryId = validUuid,
             cityId = validCityUuid,
+            pinCode = "123456",
             description = "   \n\t ",
             condition = "good",
             priceType = "fixed",

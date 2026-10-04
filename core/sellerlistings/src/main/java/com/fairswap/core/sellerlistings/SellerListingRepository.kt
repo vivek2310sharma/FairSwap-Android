@@ -78,6 +78,37 @@ class SellerListingRepository(
 
     suspend fun currentUserId(): String? = gateway.currentUserId()
 
+    suspend fun lookupPincode(pinCode: String): PincodeLookupResult {
+        return try {
+            withTimeout(15_000) {
+                val response = gateway.lookupPincode(pinCode)
+                if (response.success) {
+                    PincodeLookupResult.Success(
+                        pincode = response.pincode ?: pinCode,
+                        state = response.state,
+                        district = response.district,
+                        city = response.city,
+                        cityId = response.cityId,
+                        districts = response.districts.map { it.toDomain(response.state) },
+                        localities = response.localities.map { it.toDomain() },
+                    )
+                } else {
+                    val reason = when (response.error) {
+                        "INVALID_PINCODE" -> PincodeLookupFailureReason.INVALID_PINCODE
+                        "PINCODE_NOT_FOUND" -> PincodeLookupFailureReason.PINCODE_NOT_FOUND
+                        "CONFLICTING_POSTAL_STATES" -> PincodeLookupFailureReason.CONFLICTING_POSTAL_STATES
+                        "PINCODE_ADMIN_DATA_UNAVAILABLE" -> PincodeLookupFailureReason.PINCODE_ADMIN_DATA_UNAVAILABLE
+                        else -> PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE
+                    }
+                    PincodeLookupResult.Failure(reason)
+                }
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            PincodeLookupResult.Failure(PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE)
+        }
+    }
+
     suspend fun loadCategories(): ReferenceDataResult<List<Category>> = try {
         withTimeout(15_000) {
             val list = gateway.fetchCategories()
@@ -156,6 +187,7 @@ class SellerListingRepository(
                     row.toDetail(
                         readyMediaCount = mediaCounts[listingId] ?: 0,
                         privatePinCode = privateLocation?.pinCode,
+                        privateLandmark = privateLocation?.landmark,
                     )
                 )
             }
@@ -206,6 +238,7 @@ class SellerListingRepository(
                 priceType = input.priceType?.ifBlank { null },
                 pricePaise = if (input.priceType == "free") 0L else Rupees.toPaise(input.priceRupees)?.toLong(),
                 pinCode = input.pinCode.trim().ifBlank { null },
+                landmark = input.landmark.trim().ifBlank { null },
                 categoryAttributes = input.categoryAttributes,
             )
 
@@ -223,6 +256,7 @@ class SellerListingRepository(
                 insertedRow.toDetail(
                     readyMediaCount = 0,
                     privatePinCode = privateLocation?.pinCode,
+                    privateLandmark = privateLocation?.landmark,
                 )
             )
         }
@@ -277,6 +311,7 @@ class SellerListingRepository(
                     priceType = input.priceType?.ifBlank { null },
                     pricePaise = if (input.priceType == "free") 0L else Rupees.toPaise(input.priceRupees)?.toLong(),
                     pinCode = input.pinCode.trim().ifBlank { null },
+                    landmark = input.landmark.trim().ifBlank { null },
                     categoryAttributes = input.categoryAttributes,
                 )
 
@@ -299,6 +334,7 @@ class SellerListingRepository(
                     reloadedRow.toDetail(
                         readyMediaCount = mediaCounts[listingId] ?: 0,
                         privatePinCode = privateLocation?.pinCode,
+                        privateLandmark = privateLocation?.landmark,
                     )
                 )
             }
@@ -342,6 +378,7 @@ class SellerListingRepository(
                 val existingDetail = existingRow.toDetail(
                     readyMediaCount = 0,
                     privatePinCode = existingPrivateLocation?.pinCode,
+                    privateLandmark = existingPrivateLocation?.landmark,
                 )
                 val persistedInput = existingDetail.toInput()
 
@@ -381,6 +418,7 @@ class SellerListingRepository(
                     reloadedRow.toDetail(
                         readyMediaCount = readyCount,
                         privatePinCode = reloadedPrivateLocation?.pinCode,
+                        privateLandmark = reloadedPrivateLocation?.landmark,
                     )
                 )
             }
@@ -441,6 +479,7 @@ class SellerListingRepository(
                     reloadedRow.toDetail(
                         readyMediaCount = mediaCounts[listingId] ?: 0,
                         privatePinCode = privateLocation?.pinCode,
+                        privateLandmark = privateLocation?.landmark,
                     )
                 )
             }

@@ -23,6 +23,7 @@ object SellerListingValidation {
         var condErr: String? = null
         var priceErr: String? = null
         var pinErr: String? = null
+        var landmarkErr: String? = null
 
         val trimmedTitle = input.title.trim()
         if (trimmedTitle.length < 3) {
@@ -40,7 +41,7 @@ object SellerListingValidation {
             catErr = "Select a valid category."
         }
 
-        if (input.cityId.isNullOrBlank() || !isUuid(input.cityId)) {
+        if (!input.cityId.isNullOrBlank() && !isUuid(input.cityId)) {
             cityErr = "Select a valid city."
         }
 
@@ -68,6 +69,11 @@ object SellerListingValidation {
             pinErr = "PIN code must be exactly 6 digits."
         }
 
+        val trimmedLandmark = input.landmark.trim()
+        if (trimmedLandmark.length > 200) {
+            landmarkErr = "Landmark cannot exceed 200 characters."
+        }
+
         return ListingValidationErrors(
             titleError = titleErr,
             descriptionError = descErr,
@@ -77,6 +83,7 @@ object SellerListingValidation {
             conditionError = condErr,
             priceError = priceErr,
             pinCodeError = pinErr,
+            landmarkError = landmarkErr,
         )
     }
 
@@ -86,10 +93,21 @@ object SellerListingValidation {
     ): ListingValidationErrors {
         val draftErrors = validateDraft(input)
 
+        var cityErr = draftErrors.cityError
+        var pinErr = draftErrors.pinCodeError
         var descErr = draftErrors.descriptionError
         var condErr = draftErrors.conditionError
         var priceErr = draftErrors.priceError
         val attrErrors = mutableMapOf<String, String>()
+
+        if (input.cityId.isNullOrBlank() || !isUuid(input.cityId)) {
+            cityErr = "Select a valid city."
+        }
+
+        val trimmedPin = input.pinCode.trim()
+        if (trimmedPin.isBlank() || !trimmedPin.matches(Regex("^[0-9]{6}$"))) {
+            pinErr = "PIN code must be exactly 6 digits."
+        }
 
         val trimmedDesc = input.description.trim()
         if (trimmedDesc.length < 10) {
@@ -131,11 +149,12 @@ object SellerListingValidation {
             titleError = draftErrors.titleError,
             descriptionError = descErr,
             categoryError = draftErrors.categoryError,
-            cityError = draftErrors.cityError,
+            cityError = cityErr,
             localityError = draftErrors.localityError,
             conditionError = condErr,
             priceError = priceErr,
-            pinCodeError = draftErrors.pinCodeError,
+            pinCodeError = pinErr,
+            landmarkError = draftErrors.landmarkError,
             attributeErrors = attrErrors,
         )
     }

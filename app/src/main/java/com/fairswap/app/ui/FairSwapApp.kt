@@ -386,6 +386,8 @@ fun FairSwapApp(
                             onCityChange = viewModel::updateCity,
                             onLocalityChange = viewModel::updateLocality,
                             onPinCodeChange = viewModel::updatePinCode,
+                            onLandmarkChange = viewModel::updateLandmark,
+                            onSelectDistrict = viewModel::selectDistrict,
                             onAttributeChange = viewModel::updateCategoryAttribute,
                             onSaveDraft = { viewModel.saveDraft(entryId = key.entryId) },
                             onSubmitListing = { viewModel.submitListing(entryId = key.entryId) },
@@ -443,10 +445,14 @@ fun FairSwapApp(
                             onCityChange = viewModel::updateCity,
                             onLocalityChange = viewModel::updateLocality,
                             onPinCodeChange = viewModel::updatePinCode,
+                            onLandmarkChange = viewModel::updateLandmark,
+                            onSelectDistrict = viewModel::selectDistrict,
                             onAttributeChange = viewModel::updateCategoryAttribute,
                             onSaveDraft = { viewModel.saveDraft(entryId = key.entryId) },
                             onSubmitListing = { viewModel.submitListing(entryId = key.entryId) },
                             onClearError = viewModel::clearErrorMessage,
+                            onRetryLocalities = viewModel::retryLocalities,
+                            onRetryPincodeLookup = viewModel::retryPincodeLookup,
                         )
                     }
                 }
