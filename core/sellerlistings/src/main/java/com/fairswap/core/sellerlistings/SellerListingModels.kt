@@ -24,6 +24,7 @@ data class ListingValidationErrors(
     val conditionError: String? = null,
     val priceError: String? = null,
     val pinCodeError: String? = null,
+    val landmarkError: String? = null,
     val attributeErrors: Map<String, String> = emptyMap(),
 ) {
     val isValid: Boolean
@@ -35,6 +36,7 @@ data class ListingValidationErrors(
             conditionError == null &&
             priceError == null &&
             pinCodeError == null &&
+            landmarkError == null &&
             attributeErrors.isEmpty()
 }
 
@@ -140,17 +142,17 @@ data class SellerPrivateLocationDto(
 data class SellerListingRowDto(
     val id: String,
     @SerialName("seller_id") val sellerId: String,
-    val slug: String? = null,
+    val title: String,
     @SerialName("category_id") val categoryId: String,
     @SerialName("city_id") val cityId: String,
     @SerialName("locality_id") val localityId: String? = null,
-    val title: String,
     val description: String? = null,
     val condition: String? = null,
     @SerialName("price_type") val priceType: String? = null,
     @SerialName("price_paise") val pricePaise: Long? = null,
     @SerialName("category_attributes") val categoryAttributes: JsonObject = JsonObject(emptyMap()),
-    val status: String,
+    val status: String = "draft",
+    val slug: String? = null,
     val revision: Int = 1,
     @SerialName("renewal_count") val renewalCount: Int = 0,
     @SerialName("rejection_reason") val rejectionReason: String? = null,
@@ -181,7 +183,11 @@ data class SellerListingRowDto(
         updatedAt = updatedAt ?: "",
     )
 
-    fun toDetail(readyMediaCount: Int, privatePinCode: String? = null): SellerListingDetail = SellerListingDetail(
+    fun toDetail(
+        readyMediaCount: Int,
+        privatePinCode: String? = null,
+        privateLandmark: String? = null,
+    ): SellerListingDetail = SellerListingDetail(
         id = id,
         sellerId = sellerId,
         slug = slug ?: "",
@@ -195,6 +201,7 @@ data class SellerListingRowDto(
         pricePaise = pricePaise,
         formattedPrice = Rupees.display(priceType, pricePaise?.toInt()),
         pinCode = privatePinCode,
+        landmark = privateLandmark,
         categoryAttributes = categoryAttributes,
         status = SellerListingStatus.fromWire(status),
         revision = revision,
@@ -260,6 +267,7 @@ data class SellerListingDetail(
     val pricePaise: Long?,
     val formattedPrice: String,
     val pinCode: String?,
+    val landmark: String?,
     val categoryAttributes: JsonObject,
     val status: SellerListingStatus,
     val revision: Int,
@@ -274,13 +282,14 @@ data class SellerListingDetail(
     fun toInput(): SellerListingInput = SellerListingInput(
         categoryId = categoryId,
         cityId = cityId,
-        localityId = localityId ?: "",
+        localityId = localityId?.ifBlank { null },
         title = title,
         description = description ?: "",
         condition = condition,
         priceType = priceType,
         priceRupees = if (priceType == "free") "" else (pricePaise?.let { Rupees.formatPaise(it.toInt()).removePrefix("₹").replace(",", "").trim() } ?: ""),
         pinCode = pinCode ?: "",
+        landmark = landmark ?: "",
         categoryAttributes = categoryAttributes,
     )
 }
@@ -295,6 +304,7 @@ data class SellerListingInput(
     val priceType: String? = null,
     val priceRupees: String = "",
     val pinCode: String = "",
+    val landmark: String = "",
     val categoryAttributes: JsonObject = JsonObject(emptyMap()),
 )
 
@@ -330,6 +340,7 @@ data class SellerListingInsertDto(
     @SerialName("price_type") val priceType: String? = null,
     @SerialName("price_paise") val pricePaise: Long? = null,
     @SerialName("pin_code") val pinCode: String? = null,
+    val landmark: String? = null,
     @SerialName("category_attributes") val categoryAttributes: JsonObject = JsonObject(emptyMap()),
 )
 
@@ -344,5 +355,77 @@ data class SellerListingUpdateDto(
     @SerialName("price_type") val priceType: String? = null,
     @SerialName("price_paise") val pricePaise: Long? = null,
     @SerialName("pin_code") val pinCode: String? = null,
+    val landmark: String? = null,
     @SerialName("category_attributes") val categoryAttributes: JsonObject = JsonObject(emptyMap()),
 )
+
+@Serializable
+data class PincodeLookupResponseDto(
+    val success: Boolean,
+    val pincode: String? = null,
+    val state: String? = null,
+    val district: String? = null,
+    val city: String? = null,
+    @SerialName("city_id") val cityId: String? = null,
+    val districts: List<PincodeDistrictDto> = emptyList(),
+    val localities: List<PincodeLocalityDto> = emptyList(),
+    @SerialName("postal_offices") val postalOffices: JsonElement? = null,
+    val error: String? = null,
+    val message: String? = null,
+)
+
+@Serializable
+data class PincodeDistrictDto(
+    val name: String,
+    @SerialName("city_id") val cityId: String? = null,
+) {
+    fun toDomain(state: String? = null) = PincodeDistrict(name = name, cityId = cityId, state = state)
+}
+
+@Serializable
+data class PincodeLocalityDto(
+    val id: String,
+    val name: String,
+    val slug: String? = null,
+    @SerialName("city_id") val cityId: String? = null,
+    @SerialName("city_name") val cityName: String? = null,
+    val district: String,
+    val state: String? = null,
+) {
+    fun toDomain() = PincodeLocality(name = name, id = id, district = district, cityId = cityId)
+}
+
+data class PincodeDistrict(
+    val name: String,
+    val cityId: String? = null,
+    val state: String? = null,
+)
+
+data class PincodeLocality(
+    val name: String,
+    val id: String,
+    val district: String,
+    val cityId: String? = null,
+)
+
+enum class PincodeLookupFailureReason {
+    INVALID_PINCODE,
+    PINCODE_NOT_FOUND,
+    CONFLICTING_POSTAL_STATES,
+    PINCODE_ADMIN_DATA_UNAVAILABLE,
+    COMPATIBILITY_CITY_UNAVAILABLE,
+    NETWORK_OR_FETCH_FAILURE,
+}
+
+sealed interface PincodeLookupResult {
+    data class Success(
+        val pincode: String,
+        val state: String?,
+        val district: String?,
+        val city: String?,
+        val cityId: String?,
+        val districts: List<PincodeDistrict>,
+        val localities: List<PincodeLocality>,
+    ) : PincodeLookupResult
+    data class Failure(val reason: PincodeLookupFailureReason) : PincodeLookupResult
+}

@@ -29,6 +29,12 @@ private data class PrivateLocationRpcParams(
     @SerialName("p_listing_id") val listingId: String,
 )
 
+
+@Serializable
+private data class LookupPincodeRpcParams(
+    @SerialName("p_pincode") val pinCode: String,
+)
+
 interface SellerListingGateway {
     suspend fun currentUserId(): String?
     suspend fun policyAccepted(): Boolean
@@ -44,6 +50,7 @@ interface SellerListingGateway {
     suspend fun updateListing(listingId: String, sellerId: String, updateDto: SellerListingUpdateDto): SellerListingRowDto
     suspend fun submitListing(listingId: String)
     suspend fun transitionListing(listingId: String, action: String)
+    suspend fun lookupPincode(pinCode: String): PincodeLookupResponseDto
 }
 
 class SupabaseSellerListingGateway(
@@ -165,6 +172,13 @@ class SupabaseSellerListingGateway(
             parameters = SubmitListingRpcParams(listingId),
         )
     }
+
+
+    override suspend fun lookupPincode(pinCode: String): PincodeLookupResponseDto =
+        supabase.postgrest.rpc(
+            function = "lookup_pincode",
+            parameters = LookupPincodeRpcParams(pinCode),
+        ).decodeAs<PincodeLookupResponseDto>()
 
     override suspend fun transitionListing(listingId: String, action: String) {
         supabase.postgrest.rpc(

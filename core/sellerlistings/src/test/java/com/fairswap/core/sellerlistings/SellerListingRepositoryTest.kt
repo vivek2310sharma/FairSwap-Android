@@ -5,6 +5,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -24,6 +25,16 @@ private class ControllableSellerListingGateway(
     var submitCallCount = 0
     var transitionCallCount = 0
     var fetchPrivateLocationCallCount = 0
+
+    var nextLookupResult: com.fairswap.core.sellerlistings.PincodeLookupResponseDto? = null
+    override suspend fun lookupPincode(pinCode: String): com.fairswap.core.sellerlistings.PincodeLookupResponseDto {
+        errorToThrow?.let { throw it }
+        return nextLookupResult ?: com.fairswap.core.sellerlistings.PincodeLookupResponseDto(
+            success = true,
+            pincode = pinCode,
+            cityId = "66666666-7777-8888-9999-000000000000"
+        )
+    }
 
     var lastEnteredSellerId: String? = null
 
@@ -136,7 +147,7 @@ private class ControllableSellerListingGateway(
             updatedAt = "2026-03-31T00:00:00Z",
         )
         listings[id] = row
-        privateLocations[id] = SellerPrivateLocationDto(listingId = id, pinCode = insertDto.pinCode)
+        privateLocations[id] = SellerPrivateLocationDto(listingId = id, pinCode = insertDto.pinCode, landmark = insertDto.landmark)
         return row
     }
 
@@ -170,7 +181,7 @@ private class ControllableSellerListingGateway(
             rejectionReason = if (existing.status == "rejected") null else existing.rejectionReason,
         )
         listings[listingId] = updated
-        privateLocations[listingId] = SellerPrivateLocationDto(listingId = listingId, pinCode = updateDto.pinCode)
+        privateLocations[listingId] = SellerPrivateLocationDto(listingId = listingId, pinCode = updateDto.pinCode, landmark = updateDto.landmark)
         return updated
     }
 
@@ -203,6 +214,282 @@ class SellerListingRepositoryTest {
 
     private val validUuid = "11111111-2222-3333-4444-555555555555"
     private val validCityUuid = "66666666-7777-8888-9999-000000000000"
+    private val json = Json { ignoreUnknownKeys = true }
+
+    @Test
+    fun `decodes real single-district backend JSON shape`() {
+        val rawJson = """
+            {
+                "success": true,
+                "pincode": "302001",
+                "state": "Rajasthan",
+                "district": "Jaipur",
+                "city": "Jaipur",
+                "city_id": "66666666-7777-8888-9999-000000000000",
+                "districts": [
+                    { "name": "Jaipur", "city_id": "66666666-7777-8888-9999-000000000000" }
+                ],
+                "localities": [
+                    {
+                        "id": "loc-1",
+                        "name": "Pink City",
+                        "slug": "pink-city",
+                        "city_id": "66666666-7777-8888-9999-000000000000",
+                        "city_name": "Jaipur",
+                        "district": "Jaipur",
+                        "state": "Rajasthan"
+                    }
+                ],
+                "postal_offices": [
+                    { "name": "Jaipur GPO", "pincode": "302001" }
+                ]
+            }
+        """.trimIndent()
+
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        assertTrue(dto.success)
+        assertEquals("302001", dto.pincode)
+        assertEquals("Jaipur", dto.district)
+        assertEquals("66666666-7777-8888-9999-000000000000", dto.cityId)
+        assertEquals(1, dto.districts.size)
+        assertEquals("Jaipur", dto.districts[0].name)
+        assertEquals("66666666-7777-8888-9999-000000000000", dto.districts[0].cityId)
+        assertEquals(1, dto.localities.size)
+        assertEquals("loc-1", dto.localities[0].id)
+        assertEquals("Pink City", dto.localities[0].name)
+    }
+
+    @Test
+    fun `decodes real multi-district backend JSON shape with null top level district and city`() {
+        val rawJson = """
+            {
+                "success": true,
+                "pincode": "123456",
+                "state": "Haryana",
+                "district": null,
+                "city": null,
+                "city_id": null,
+                "districts": [
+                    { "name": "Gurugram", "city_id": "11111111-1111-1111-1111-111111111111" },
+                    { "name": "Faridabad", "city_id": "22222222-2222-2222-2222-222222222222" }
+                ],
+                "localities": [
+                    { "id": "l-1", "name": "Sector 14", "district": "Gurugram" },
+                    { "id": "l-2", "name": "Sector 15", "district": "Faridabad" }
+                ],
+                "postal_offices": []
+            }
+        """.trimIndent()
+
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        assertTrue(dto.success)
+        assertNull(dto.district)
+        assertNull(dto.cityId)
+        assertEquals(2, dto.districts.size)
+        assertEquals("Gurugram", dto.districts[0].name)
+        assertEquals("11111111-1111-1111-1111-111111111111", dto.districts[0].cityId)
+        assertEquals("Faridabad", dto.districts[1].name)
+        assertEquals("22222222-2222-2222-2222-222222222222", dto.districts[1].cityId)
+    }
+
+    @Test
+    fun `district DTO name and city_id mapping`() {
+        val dto = PincodeDistrictDto(name = "Delhi North", cityId = "city-uuid-123")
+        val domain = dto.toDomain("Delhi")
+        assertEquals("Delhi North", domain.name)
+        assertEquals("city-uuid-123", domain.cityId)
+        assertEquals("Delhi", domain.state)
+    }
+
+    @Test
+    fun `locality DTO full wire shape mapping`() {
+        val dto = PincodeLocalityDto(
+            id = "loc-99",
+            name = "Connaught Place",
+            slug = "connaught-place",
+            cityId = "city-1",
+            cityName = "Delhi",
+            district = "New Delhi",
+            state = "Delhi"
+        )
+        val domain = dto.toDomain()
+        assertEquals("loc-99", domain.id)
+        assertEquals("Connaught Place", domain.name)
+        assertEquals("New Delhi", domain.district)
+        assertEquals("city-1", domain.cityId)
+    }
+
+    @Test
+    fun `decodes failure JSON INVALID_PINCODE`() = runTest {
+        val rawJson = """{ "success": false, "error": "INVALID_PINCODE", "message": "Raw server message" }"""
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        val gateway = ControllableSellerListingGateway()
+        gateway.nextLookupResult = dto
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("000000")
+        assertTrue(result is PincodeLookupResult.Failure)
+        assertEquals(PincodeLookupFailureReason.INVALID_PINCODE, (result as PincodeLookupResult.Failure).reason)
+    }
+
+    @Test
+    fun `decodes failure JSON PINCODE_NOT_FOUND`() = runTest {
+        val rawJson = """{ "success": false, "error": "PINCODE_NOT_FOUND", "message": "Raw server message" }"""
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        val gateway = ControllableSellerListingGateway()
+        gateway.nextLookupResult = dto
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("999999")
+        assertTrue(result is PincodeLookupResult.Failure)
+        assertEquals(PincodeLookupFailureReason.PINCODE_NOT_FOUND, (result as PincodeLookupResult.Failure).reason)
+    }
+
+    @Test
+    fun `decodes failure JSON CONFLICTING_POSTAL_STATES`() = runTest {
+        val rawJson = """{ "success": false, "error": "CONFLICTING_POSTAL_STATES", "message": "Raw server message" }"""
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        val gateway = ControllableSellerListingGateway()
+        gateway.nextLookupResult = dto
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("123456")
+        assertTrue(result is PincodeLookupResult.Failure)
+        assertEquals(PincodeLookupFailureReason.CONFLICTING_POSTAL_STATES, (result as PincodeLookupResult.Failure).reason)
+    }
+
+    @Test
+    fun `decodes failure JSON PINCODE_ADMIN_DATA_UNAVAILABLE`() = runTest {
+        val rawJson = """{ "success": false, "error": "PINCODE_ADMIN_DATA_UNAVAILABLE", "message": "Raw server message" }"""
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        val gateway = ControllableSellerListingGateway()
+        gateway.nextLookupResult = dto
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("123456")
+        assertTrue(result is PincodeLookupResult.Failure)
+        assertEquals(PincodeLookupFailureReason.PINCODE_ADMIN_DATA_UNAVAILABLE, (result as PincodeLookupResult.Failure).reason)
+    }
+
+    @Test
+    fun `unknown failure maps to NETWORK_OR_FETCH_FAILURE`() = runTest {
+        val rawJson = """{ "success": false, "error": "UNKNOWN_SERVER_ERROR", "message": "Raw server message" }"""
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        val gateway = ControllableSellerListingGateway()
+        gateway.nextLookupResult = dto
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("123456")
+        assertTrue(result is PincodeLookupResult.Failure)
+        assertEquals(PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE, (result as PincodeLookupResult.Failure).reason)
+    }
+
+    @Test
+    fun `network exception maps to NETWORK_OR_FETCH_FAILURE`() = runTest {
+        val gateway = ControllableSellerListingGateway(errorToThrow = RuntimeException("Connection timed out"))
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("123456")
+        assertTrue(result is PincodeLookupResult.Failure)
+        assertEquals(PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE, (result as PincodeLookupResult.Failure).reason)
+    }
+
+    @Test
+    fun `postal_offices discarded from domain mapping`() = runTest {
+        val rawJson = """
+            {
+                "success": true,
+                "pincode": "302001",
+                "state": "Rajasthan",
+                "district": "Jaipur",
+                "city_id": "66666666-7777-8888-9999-000000000000",
+                "postal_offices": [ { "office": "GPO" } ]
+            }
+        """.trimIndent()
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(rawJson)
+        val gateway = ControllableSellerListingGateway()
+        gateway.nextLookupResult = dto
+        val repo = SellerListingRepository(gateway)
+
+        val result = repo.lookupPincode("302001")
+        assertTrue(result is PincodeLookupResult.Success)
+        // Domain model PincodeLookupResult.Success does not contain postal_offices field
+    }
+
+    @Test
+    fun `private hydration includes PIN and landmark`() = runTest {
+        val gateway = ControllableSellerListingGateway(userId = "user-123")
+        gateway.listings["22222222-3333-4444-5555-000000000001"] = SellerListingRowDto(
+            id = "22222222-3333-4444-5555-000000000001",
+            sellerId = "user-123",
+            title = "Phone",
+            categoryId = validUuid,
+            cityId = validCityUuid,
+            status = "active",
+        )
+        gateway.privateLocations["22222222-3333-4444-5555-000000000001"] = SellerPrivateLocationDto(
+            listingId = "22222222-3333-4444-5555-000000000001",
+            pinCode = "302001",
+            landmark = "Near Hawa Mahal",
+        )
+        val repo = SellerListingRepository(gateway)
+        val session = repo.sessionOwner.updateSession("user-123")!!
+
+        val result = repo.loadDetail("22222222-3333-4444-5555-000000000001", session)
+        assertTrue(result is SellerDetailResult.Success)
+        val detail = (result as SellerDetailResult.Success).listing
+        assertEquals("302001", detail.pinCode)
+        assertEquals("Near Hawa Mahal", detail.landmark)
+    }
+
+    @Test
+    fun `insert and update payload include landmark`() = runTest {
+        val gateway = ControllableSellerListingGateway(userId = "user-123")
+        val repo = SellerListingRepository(gateway)
+        val session = repo.sessionOwner.updateSession("user-123")!!
+
+        val input = SellerListingInput(
+            title = "New Draft",
+            categoryId = validUuid,
+            cityId = validCityUuid,
+            pinCode = "302001",
+            landmark = "Opposite Central Park",
+        )
+
+        val result = repo.createDraft(input, session)
+        assertTrue(result is SellerMutationResult.Success)
+        val detail = (result as SellerMutationResult.Success).value
+        assertEquals("Opposite Central Park", detail.landmark)
+    }
+
+    @Test
+    fun `landmark 200 accepted and 201 rejected`() {
+        val valid200 = "A".repeat(200)
+        val invalid201 = "A".repeat(201)
+
+        val input200 = SellerListingInput(title = "Title", categoryId = validUuid, landmark = valid200)
+        val err200 = SellerListingValidation.validateDraft(input200)
+        assertNull(err200.landmarkError)
+
+        val input201 = SellerListingInput(title = "Title", categoryId = validUuid, landmark = invalid201)
+        val err201 = SellerListingValidation.validateDraft(input201)
+        assertEquals("Landmark cannot exceed 200 characters.", err201.landmarkError)
+    }
+
+    @Test
+    fun `draft local validation allows cityId null`() {
+        val input = SellerListingInput(title = "Title", categoryId = validUuid, cityId = null)
+        val err = SellerListingValidation.validateDraft(input)
+        assertNull(err.cityError)
+    }
+
+    @Test
+    fun `submit validation rejects cityId null`() {
+        val input = SellerListingInput(title = "Title", categoryId = validUuid, cityId = null, pinCode = "123456", description = "Detailed description >= 10 chars", condition = "good", priceType = "free")
+        val err = SellerListingValidation.validateSubmit(input)
+        assertEquals("Select a valid city.", err.cityError)
+        assertFalse(err.isValid)
+    }
 
     @Test
     fun `SellerSessionOwner lifecycle A to A keeps gen, A to null to A creates new gen, A to B creates new gen`() {
@@ -462,6 +749,7 @@ class SellerListingRepositoryTest {
                         title = "Pending Draft",
                         categoryId = validUuid,
                         cityId = validCityUuid,
+                        pinCode = "123456",
                     ),
                     sessionA,
                 )
@@ -543,6 +831,10 @@ class SellerListingRepositoryTest {
             priceType = "free",
             pricePaise = 0,
             status = "draft",
+        )
+        gateway.privateLocations["22222222-3333-4444-5555-000000000001"] = SellerPrivateLocationDto(
+            listingId = "22222222-3333-4444-5555-000000000001",
+            pinCode = "123456",
         )
         val repo = SellerListingRepository(gateway)
         val sessionA = repo.sessionOwner.updateSession("user-A")!!
@@ -928,5 +1220,55 @@ class SellerListingRepositoryTest {
         val projectionText = gateway.sellerListingSafeColumns.value
         assertFalse("Projection text must not contain pin_code: $projectionText", projectionText.contains("pin_code"))
         assertFalse("Projection text must not contain landmark: $projectionText", projectionText.contains("landmark"))
+    }
+
+    @Test
+    fun `pincode lookup scalar jsonb payload decodes directly into DTO without array wrapper`() {
+        val scalarJsonPayload = """
+            {
+              "success": true,
+              "pincode": "301001",
+              "state": "Rajasthan",
+              "district": "Alwar",
+              "city": "Alwar",
+              "city_id": "681433d2-806e-48f7-bf8c-4f2028b5286c",
+              "districts": [
+                {
+                  "name": "Alwar",
+                  "city_id": "681433d2-806e-48f7-bf8c-4f2028b5286c",
+                  "city_name": "Alwar",
+                  "state": "Rajasthan"
+                }
+              ],
+              "localities": [
+                {
+                  "id": "88888888-9999-0000-1111-222222222222",
+                  "name": "Koramangala",
+                  "district": "Alwar",
+                  "city_id": "681433d2-806e-48f7-bf8c-4f2028b5286c"
+                }
+              ],
+              "postal_offices": [
+                { "name": "Alwar HO" }
+              ],
+              "error": null,
+              "message": null
+            }
+        """.trimIndent()
+
+        val json = Json { ignoreUnknownKeys = true }
+        val dto = json.decodeFromString<PincodeLookupResponseDto>(scalarJsonPayload)
+
+        assertTrue(dto.success)
+        assertEquals("301001", dto.pincode)
+        assertEquals("Rajasthan", dto.state)
+        assertEquals("Alwar", dto.district)
+        assertEquals("Alwar", dto.city)
+        assertEquals("681433d2-806e-48f7-bf8c-4f2028b5286c", dto.cityId)
+        assertEquals(1, dto.districts.size)
+        assertEquals("Alwar", dto.districts[0].name)
+        assertEquals(1, dto.localities.size)
+        assertEquals("88888888-9999-0000-1111-222222222222", dto.localities[0].id)
+        assertTrue(dto.postalOffices != null)
     }
 }

@@ -8,6 +8,10 @@ import com.fairswap.core.discovery.Locality
 import com.fairswap.core.sellerlistings.CategoryAttributeMetadata
 import com.fairswap.core.sellerlistings.CategoryAttributesLoadResult
 import com.fairswap.core.sellerlistings.ListingValidationErrors
+import com.fairswap.core.sellerlistings.PincodeDistrict
+import com.fairswap.core.sellerlistings.PincodeLocality
+import com.fairswap.core.sellerlistings.PincodeLookupFailureReason
+import com.fairswap.core.sellerlistings.PincodeLookupResult
 import com.fairswap.core.sellerlistings.ReferenceDataResult
 import com.fairswap.core.sellerlistings.SellerDetailResult
 import com.fairswap.core.sellerlistings.SellerListingDetail
@@ -36,6 +40,39 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 
+sealed interface PincodeUiState {
+    val pinCode: String
+
+    data class Idle(override val pinCode: String) : PincodeUiState
+    data class Loading(override val pinCode: String) : PincodeUiState
+    data class ResolvedSingleDistrict(
+        override val pinCode: String,
+        val state: String?,
+        val district: String?,
+        val cityId: String,
+        val localities: List<PincodeLocality>,
+    ) : PincodeUiState
+    data class RequiresDistrictChoice(
+        override val pinCode: String,
+        val state: String?,
+        val districts: List<PincodeDistrict>,
+        val allLocalities: List<PincodeLocality>,
+        val priorLocalityId: String? = null,
+    ) : PincodeUiState
+    data class ResolvedDistrict(
+        override val pinCode: String,
+        val state: String?,
+        val district: String?,
+        val cityId: String,
+        val localities: List<PincodeLocality>,
+    ) : PincodeUiState
+    data class Error(
+        override val pinCode: String,
+        val reason: PincodeLookupFailureReason,
+        val retryable: Boolean,
+    ) : PincodeUiState
+}
+
 typealias SellerEditorEntryId = String
 
 sealed interface SellerListingEditorEvent {
@@ -56,6 +93,7 @@ data class SellerListingEditorUiState(
     val isSubmitting: Boolean = false,
     val persistedListing: SellerListingDetail? = null,
     val input: SellerListingInput = SellerListingInput(),
+    val priorLocalityId: String? = null,
     val validationErrors: ListingValidationErrors = ListingValidationErrors(),
     val categories: List<Category> = emptyList(),
     val cities: List<City> = emptyList(),
@@ -68,15 +106,57 @@ data class SellerListingEditorUiState(
     val citiesEmpty: Boolean = false,
     val readyMediaCount: Int = 0,
     val errorMessage: String? = null,
+    val pincodeUiState: PincodeUiState = PincodeUiState.Idle(""),
+    val localityReconciliationFailed: Boolean = false,
+    val showReReviewWarning: Boolean = false,
 ) {
     val isEditing: Boolean get() = listingId != null
     val loadedListingStatus: SellerListingStatus? get() = persistedListing?.status
-    val requiresReReviewOnEdit: Boolean get() = loadedListingStatus in setOf(
-        SellerListingStatus.ACTIVE,
-        SellerListingStatus.RESERVED,
-        SellerListingStatus.PAUSED,
-    )
+    val requiresReReviewOnEdit: Boolean get() {
+        if (loadedListingStatus !in setOf(SellerListingStatus.ACTIVE, SellerListingStatus.RESERVED, SellerListingStatus.PAUSED)) return false
+        val p = persistedListing?.toInput() ?: return false
+        return input.title != p.title ||
+               input.description != p.description ||
+               input.categoryId != p.categoryId ||
+               input.condition != p.condition ||
+               input.priceType != p.priceType ||
+               input.priceRupees != p.priceRupees ||
+               input.categoryAttributes != p.categoryAttributes
+    }
     val isFormDirty: Boolean get() = (persistedListing == null) || (input != persistedListing.toInput())
+
+    val isLocationReady: Boolean get() {
+        if (listingId == null) {
+            val validCity = !input.cityId.isNullOrBlank()
+            val stateResolved = pincodeUiState is PincodeUiState.ResolvedSingleDistrict || pincodeUiState is PincodeUiState.ResolvedDistrict
+            val matchingCity = when (pincodeUiState) {
+                is PincodeUiState.ResolvedSingleDistrict -> pincodeUiState.cityId == input.cityId
+                is PincodeUiState.ResolvedDistrict -> pincodeUiState.cityId == input.cityId
+                else -> false
+            }
+            return validCity && stateResolved && matchingCity
+        } else {
+            val p = persistedListing ?: return false
+            val pinChanged = input.pinCode != p.pinCode
+            val cityChanged = input.cityId != p.cityId
+            val localityChanged = input.localityId != p.localityId
+
+            val locationIdentityChanged = pinChanged || cityChanged || localityChanged
+
+            if (!locationIdentityChanged) return !input.cityId.isNullOrBlank()
+
+            val validCity = !input.cityId.isNullOrBlank()
+            val stateResolved = pincodeUiState is PincodeUiState.ResolvedSingleDistrict || pincodeUiState is PincodeUiState.ResolvedDistrict
+            val matchingCity = when (pincodeUiState) {
+                is PincodeUiState.ResolvedSingleDistrict -> pincodeUiState.cityId == input.cityId
+                is PincodeUiState.ResolvedDistrict -> pincodeUiState.cityId == input.cityId
+                else -> false
+            }
+            return validCity && stateResolved && matchingCity
+        }
+    }
+
+    val isSaveReady: Boolean get() = !isLoading && !isSaving && !isSubmitting && isLocationReady
 }
 
 @HiltViewModel
@@ -117,11 +197,13 @@ class SellerListingEditorViewModel @Inject constructor(
         localityJob?.cancel()
         saveJob?.cancel()
         submitJob?.cancel()
+        lookupJob?.cancel()
         initJob = null
         attrJob = null
         localityJob = null
         saveJob = null
         submitJob = null
+        lookupJob = null
         currentEntryId = entryId
 
         if (session == null) {
@@ -191,6 +273,8 @@ class SellerListingEditorViewModel @Inject constructor(
                                     }
 
                                     if (_state.value.session == currentSession && currentEntryId == activeEntry) {
+                                        val pin = detail.pinCode
+                                        val priorLocality = detail.localityId?.ifBlank { null }
                                         _state.update {
                                             it.copy(
                                                 isLoading = false,
@@ -203,9 +287,14 @@ class SellerListingEditorViewModel @Inject constructor(
                                                 persistedListing = detail,
                                                 readyMediaCount = detail.readyMediaCount,
                                                 input = detail.toInput(),
+                                                priorLocalityId = priorLocality,
                                                 categoriesEmpty = categories.isEmpty(),
                                                 citiesEmpty = cities.isEmpty(),
+                                                pincodeUiState = if (pin?.trim()?.length == 6) PincodeUiState.Loading(pin.trim()) else PincodeUiState.Idle(pin ?: "")
                                             )
+                                        }
+                                        if (pin?.trim()?.length == 6) {
+                                            lookupPincodeForHydration(pin.trim(), priorLocality, detail.cityId)
                                         }
                                     }
                                 }
@@ -358,6 +447,7 @@ class SellerListingEditorViewModel @Inject constructor(
         _state.update {
             it.copy(
                 session = currentSession,
+                priorLocalityId = null,
                 input = it.input.copy(cityId = cityId, localityId = null),
                 localityLoadFailed = false,
             )
@@ -424,11 +514,183 @@ class SellerListingEditorViewModel @Inject constructor(
     }
 
     fun updateLocality(localityId: String?) {
-        _state.update { it.copy(input = it.input.copy(localityId = localityId)) }
+        _state.update {
+            it.copy(
+                priorLocalityId = localityId?.ifBlank { null },
+                input = it.input.copy(localityId = localityId),
+            )
+        }
     }
 
     fun updatePinCode(value: String) {
-        _state.update { it.copy(input = it.input.copy(pinCode = value)) }
+        val digitsOnly = value.filter { it.isDigit() }.take(6)
+        val currentPin = _state.value.input.pinCode
+        if (digitsOnly == currentPin) return
+
+        val currentLocality = _state.value.input.localityId?.ifBlank { null }
+        val effectivePriorLocality = currentLocality ?: _state.value.priorLocalityId
+
+        _state.update {
+            it.copy(
+                priorLocalityId = effectivePriorLocality,
+                input = it.input.copy(pinCode = digitsOnly, cityId = null, localityId = null),
+                pincodeUiState = PincodeUiState.Idle(digitsOnly)
+            )
+        }
+        if (digitsOnly.length == 6) {
+            lookupPincode(digitsOnly)
+        }
+    }
+
+    private var lookupOpId = 0L
+    private var lookupJob: Job? = null
+
+    private fun resolveLocalityId(
+        candidateLocalities: List<PincodeLocality>,
+        priorLocalityId: String?,
+    ): String? {
+        val cleanPriorId = priorLocalityId?.ifBlank { null }
+        return if (cleanPriorId != null) {
+            if (candidateLocalities.any { it.id == cleanPriorId }) {
+                cleanPriorId
+            } else {
+                null
+            }
+        } else {
+            if (candidateLocalities.size == 1) {
+                candidateLocalities.first().id
+            } else {
+                null
+            }
+        }
+    }
+
+    private fun lookupPincodeForHydration(pin: String, persistedLocalityId: String?, persistedCityId: String) {
+        val op = ++lookupOpId
+        val currentSession = _state.value.session ?: return
+        val activeEntry = currentEntryId
+        lookupJob?.cancel()
+        lookupJob = viewModelScope.launch {
+            val result = repository.lookupPincode(pin)
+            if (lookupOpId != op || _state.value.session != currentSession || currentEntryId != activeEntry) return@launch
+            when (result) {
+                is PincodeLookupResult.Success -> {
+                    if (result.districts.size > 1) {
+                        val matchedDistrict = result.districts.firstOrNull { it.cityId != null && it.cityId == persistedCityId }
+                        if (matchedDistrict != null) {
+                            val localities = filterLocalities(result.localities, matchedDistrict.name)
+                            val targetLocalityId = resolveLocalityId(localities, persistedLocalityId)
+                            _state.update {
+                                it.copy(
+                                    pincodeUiState = PincodeUiState.ResolvedDistrict(pin, matchedDistrict.state, matchedDistrict.name, persistedCityId, localities),
+                                    input = it.input.copy(cityId = persistedCityId, localityId = targetLocalityId)
+                                )
+                            }
+                        } else {
+                            _state.update { it.copy(pincodeUiState = PincodeUiState.RequiresDistrictChoice(pin, result.state, result.districts, result.localities, priorLocalityId = persistedLocalityId)) }
+                        }
+                    } else {
+                        val cityId = result.cityId ?: result.districts.firstOrNull()?.cityId ?: resolveCompatibilityCity(result.district, result.state)
+                        if (cityId == null) {
+                            _state.update { it.copy(pincodeUiState = PincodeUiState.Error(pin, PincodeLookupFailureReason.COMPATIBILITY_CITY_UNAVAILABLE, false)) }
+                            return@launch
+                        }
+                        val localities = filterLocalities(result.localities, result.district)
+                        val targetLocalityId = resolveLocalityId(localities, persistedLocalityId)
+                        _state.update {
+                            it.copy(
+                                pincodeUiState = PincodeUiState.ResolvedSingleDistrict(pin, result.state, result.district, cityId, localities),
+                                input = it.input.copy(cityId = cityId, localityId = targetLocalityId)
+                            )
+                        }
+                    }
+                }
+                is PincodeLookupResult.Failure -> {
+                    val retryable = result.reason == PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE
+                    _state.update { it.copy(pincodeUiState = PincodeUiState.Error(pin, result.reason, retryable)) }
+                }
+            }
+        }
+    }
+
+    private fun lookupPincode(pin: String) {
+        val op = ++lookupOpId
+        val currentSession = _state.value.session ?: return
+        val activeEntry = currentEntryId
+        val priorLocality = _state.value.priorLocalityId
+        _state.update { it.copy(pincodeUiState = PincodeUiState.Loading(pin)) }
+        lookupJob?.cancel()
+        lookupJob = viewModelScope.launch {
+            val result = repository.lookupPincode(pin)
+            if (lookupOpId != op || _state.value.session != currentSession || currentEntryId != activeEntry) return@launch
+            when (result) {
+                is PincodeLookupResult.Success -> {
+                    if (result.districts.size > 1) {
+                        _state.update { it.copy(pincodeUiState = PincodeUiState.RequiresDistrictChoice(pin, result.state, result.districts, result.localities, priorLocalityId = priorLocality)) }
+                    } else {
+                        val cityId = result.cityId ?: result.districts.firstOrNull()?.cityId ?: resolveCompatibilityCity(result.district, result.state)
+                        if (cityId == null) {
+                            _state.update { it.copy(pincodeUiState = PincodeUiState.Error(pin, PincodeLookupFailureReason.COMPATIBILITY_CITY_UNAVAILABLE, false)) }
+                            return@launch
+                        }
+                        val localities = filterLocalities(result.localities, result.district)
+                        val targetLocalityId = resolveLocalityId(localities, priorLocality)
+                        _state.update {
+                            it.copy(
+                                pincodeUiState = PincodeUiState.ResolvedSingleDistrict(pin, result.state, result.district, cityId, localities),
+                                input = it.input.copy(cityId = cityId, localityId = targetLocalityId)
+                            )
+                        }
+                    }
+                }
+                is PincodeLookupResult.Failure -> {
+                    val retryable = result.reason == PincodeLookupFailureReason.NETWORK_OR_FETCH_FAILURE
+                    _state.update { it.copy(pincodeUiState = PincodeUiState.Error(pin, result.reason, retryable)) }
+                }
+            }
+        }
+    }
+
+    private fun filterLocalities(allLocalities: List<PincodeLocality>, targetDistrict: String?): List<PincodeLocality> {
+        if (targetDistrict.isNullOrBlank()) return allLocalities
+        return allLocalities.filter { it.district.isNullOrBlank() || it.district.equals(targetDistrict, ignoreCase = true) }
+    }
+
+    private fun resolveCompatibilityCity(district: String?, state: String?): String? {
+        if (district.isNullOrBlank()) return null
+        return _state.value.cities.firstOrNull { it.name.equals(district, ignoreCase = true) && (it.state.isNullOrBlank() || it.state.equals(state, ignoreCase = true)) }?.id
+    }
+
+    fun selectDistrict(district: PincodeDistrict) {
+        val state = _state.value
+        val uiState = state.pincodeUiState as? PincodeUiState.RequiresDistrictChoice ?: return
+        val cityId = district.cityId ?: resolveCompatibilityCity(district.name, district.state ?: uiState.state)
+        if (cityId == null) {
+            _state.update { it.copy(pincodeUiState = PincodeUiState.Error(uiState.pinCode, PincodeLookupFailureReason.COMPATIBILITY_CITY_UNAVAILABLE, false)) }
+            return
+        }
+        val priorLocality = uiState.priorLocalityId ?: state.priorLocalityId
+        val localities = filterLocalities(uiState.allLocalities, district.name)
+        val targetLocalityId = resolveLocalityId(localities, priorLocality)
+        _state.update {
+            it.copy(
+                pincodeUiState = PincodeUiState.ResolvedDistrict(uiState.pinCode, district.state ?: uiState.state, district.name, cityId, localities),
+                input = it.input.copy(cityId = cityId, localityId = targetLocalityId)
+            )
+        }
+    }
+
+    fun updateLandmark(value: String) {
+        if (value.length <= 200) {
+            _state.update { it.copy(input = it.input.copy(landmark = value)) }
+        }
+    }
+
+    fun retryPincodeLookup() {
+        val pin = _state.value.input.pinCode
+        if (pin.length == 6) {
+            lookupPincode(pin)
+        }
     }
 
     fun updateCategoryAttribute(key: String, value: JsonElement) {
@@ -444,7 +706,7 @@ class SellerListingEditorViewModel @Inject constructor(
     }
 
     fun saveDraft(entryId: SellerEditorEntryId? = currentEntryId) {
-        if (_state.value.isSaving || _state.value.isSubmitting) return
+        if (_state.value.isSaving || _state.value.isSubmitting || !_state.value.isSaveReady) return
         val currentSession = _state.value.session ?: return
         val activeEntry = entryId ?: currentEntryId ?: return
         val capturedInput = _state.value.input // SYNCHRONOUS TAP-TIME CAPTURE
