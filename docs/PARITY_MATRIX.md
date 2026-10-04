@@ -8,7 +8,8 @@
 | Email sign-in / session | Complete | Complete | Android-1A |
 | Password recovery | Complete | Complete | Android-1B |
 | Policy acceptance / 18+ | Complete | Complete | Android-1A |
-| Google sign-in | Complete | Cancelled for Android | N/A |
+| Google sign-in | Removed | Cancelled for Android / N/A | N/A |
+| Email-first password + email OTP auth parity | Complete | Complete — staging accepted | Android-4C |
 | Profile | Complete | Complete | Android-3B |
 | Public discovery | Complete | Complete | Android-2A |
 | Listing detail / seller profile | Complete | Complete | Android-2B |

@@ -48,6 +48,20 @@ class AuthValidationTest {
     }
 
     @Test
+    fun validateEmailRejectsInvalidEmail() {
+        assertEquals("Please enter a valid email address.", AuthValidation.validateEmail("invalid"))
+        assertNull(AuthValidation.validateEmail(" user@example.com "))
+    }
+
+    @Test
+    fun validateOtpEnforcesExactlySixDigits() {
+        assertEquals("Please enter a valid 6-digit verification code.", AuthValidation.validateOtp("12345"))
+        assertEquals("Please enter a valid 6-digit verification code.", AuthValidation.validateOtp("1234567"))
+        assertEquals("Please enter a valid 6-digit verification code.", AuthValidation.validateOtp("abcdef"))
+        assertNull(AuthValidation.validateOtp("123456"))
+    }
+
+    @Test
     fun resetEmailMustBeValid() {
         assertEquals("Please enter a valid email address.", AuthValidation.validateResetEmail("invalid"))
         assertNull(AuthValidation.validateResetEmail(" user@example.com "))

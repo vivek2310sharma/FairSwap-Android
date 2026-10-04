@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.fairswap.core.auth.AuthGate
 import com.fairswap.core.auth.LegalPolicy
@@ -39,6 +43,12 @@ fun AuthScreen(
     onShowSignIn: () -> Unit,
     onShowSignUp: () -> Unit,
     onShowForgotPassword: () -> Unit,
+    onSubmitEmail: (String) -> Unit = {},
+    onChangeEmail: () -> Unit = {},
+    onSwitchToPassword: () -> Unit = {},
+    onSwitchToOtp: () -> Unit = {},
+    onRequestOtp: () -> Unit = {},
+    onVerifyOtp: (String) -> Unit = {},
     onSignIn: (String, String) -> Unit,
     onSignUp: (SignUpInput) -> Unit,
     onRequestPasswordReset: (String) -> Unit,
@@ -69,13 +79,35 @@ fun AuthScreen(
                 CircularProgressIndicator()
             } else when (val gate = uiState.gate) {
                 AuthGate.SignedOut -> when (uiState.mode) {
-                    AuthMode.SignIn -> SignInForm(
-                        isLoading = uiState.isLoading,
-                        error = uiState.error,
-                        onSubmit = onSignIn,
-                        onShowSignUp = onShowSignUp,
-                        onShowForgotPassword = onShowForgotPassword,
-                    )
+                    AuthMode.SignIn -> when (uiState.signInStep) {
+                        SignInStep.Email -> SignInEmailForm(
+                            isLoading = uiState.isLoading,
+                            error = uiState.error,
+                            initialEmail = uiState.normalizedEmail,
+                            onSubmit = onSubmitEmail,
+                            onShowSignUp = onShowSignUp,
+                        )
+                        SignInStep.Password -> SignInPasswordForm(
+                            email = uiState.normalizedEmail,
+                            isLoading = uiState.isLoading,
+                            error = uiState.error,
+                            onChangeEmail = onChangeEmail,
+                            onSubmit = onSignIn,
+                            onSwitchToOtp = onSwitchToOtp,
+                            onShowForgotPassword = onShowForgotPassword,
+                        )
+                        SignInStep.Otp -> SignInOtpForm(
+                            email = uiState.normalizedEmail,
+                            isLoading = uiState.isLoading,
+                            error = uiState.error,
+                            otpAcknowledged = uiState.otpAcknowledged,
+                            resendAvailableAt = uiState.resendAvailableAt,
+                            onChangeEmail = onChangeEmail,
+                            onSubmit = onVerifyOtp,
+                            onResend = onRequestOtp,
+                            onSwitchToPassword = onSwitchToPassword,
+                        )
+                    }
                     AuthMode.SignUp -> SignUpForm(
                         isLoading = uiState.isLoading,
                         error = uiState.error,
@@ -134,18 +166,17 @@ fun AuthScreen(
 }
 
 @Composable
-private fun SignInForm(
+private fun SignInEmailForm(
     isLoading: Boolean,
     error: String?,
-    onSubmit: (String, String) -> Unit,
+    initialEmail: String,
+    onSubmit: (String) -> Unit,
     onShowSignUp: () -> Unit,
-    onShowForgotPassword: () -> Unit,
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(initialEmail) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Sign in", style = MaterialTheme.typography.headlineSmall)
+        Text("Sign in to FairSwap", style = MaterialTheme.typography.headlineSmall)
         error?.let { ErrorText(it) }
         OutlinedTextField(
             value = email,
@@ -154,29 +185,123 @@ private fun SignInForm(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        Button(
+            onClick = { onSubmit(email) },
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Continue") }
+        OutlinedButton(
+            onClick = onShowSignUp,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Create account") }
+    }
+}
+
+@Composable
+private fun SignInPasswordForm(
+    email: String,
+    isLoading: Boolean,
+    error: String?,
+    onChangeEmail: () -> Unit,
+    onSubmit: (String, String) -> Unit,
+    onSwitchToOtp: () -> Unit,
+    onShowForgotPassword: () -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Sign in to FairSwap", style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Email: $email", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = onChangeEmail, enabled = !isLoading) { Text("Change") }
+        }
+        error?.let { ErrorText(it) }
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
+        TextButton(onClick = { passwordVisible = !passwordVisible }, modifier = Modifier.align(Alignment.End)) {
+            Text(if (passwordVisible) "Hide password" else "Show password")
+        }
         Button(
             onClick = { onSubmit(email, password) },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Sign in") }
         OutlinedButton(
-            onClick = onShowSignUp,
+            onClick = onSwitchToOtp,
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Create account") }
+        ) { Text("Email me a one-time code instead") }
         OutlinedButton(
             onClick = onShowForgotPassword,
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Forgot password?") }
+    }
+}
+
+@Composable
+private fun SignInOtpForm(
+    email: String,
+    isLoading: Boolean,
+    error: String?,
+    otpAcknowledged: Boolean,
+    resendAvailableAt: Long,
+    onChangeEmail: () -> Unit,
+    onSubmit: (String) -> Unit,
+    onResend: () -> Unit,
+    onSwitchToPassword: () -> Unit,
+) {
+    var otp by remember { mutableStateOf("") }
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(resendAvailableAt) {
+        while (System.currentTimeMillis() < resendAvailableAt) {
+            kotlinx.coroutines.delay(1000)
+            now = System.currentTimeMillis()
+        }
+    }
+    val secondsLeft = kotlin.math.max(0, kotlin.math.ceil((resendAvailableAt - now) / 1000.0).toInt())
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Sign in to FairSwap", style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Email: $email", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = onChangeEmail, enabled = !isLoading) { Text("Change") }
+        }
+        if (otpAcknowledged) {
+            Text("If this email is associated with an eligible account, you'll receive a sign-in code shortly.", color = androidx.compose.ui.graphics.Color(0xFF059669))
+        }
+        error?.let { ErrorText(it) }
+        OutlinedTextField(
+            value = otp,
+            onValueChange = { otp = it.filter { ch -> ch in '0'..'9' }.take(6) },
+            label = { Text("6-digit code") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(
+            onClick = { onSubmit(otp) },
+            enabled = !isLoading && otp.length == 6,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Verify & Continue") }
+        OutlinedButton(
+            onClick = onSwitchToPassword,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Sign in with password instead") }
+        OutlinedButton(
+            onClick = onResend,
+            enabled = !isLoading && secondsLeft == 0,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(if (secondsLeft > 0) "Resend code (${secondsLeft}s)" else "Resend code") }
     }
 }
 
@@ -222,6 +347,8 @@ private fun SetNewPasswordForm(
 ) {
     var password by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Set new password", style = MaterialTheme.typography.headlineSmall)
         error?.let { ErrorText(it) }
@@ -230,7 +357,7 @@ private fun SetNewPasswordForm(
             onValueChange = { password = it },
             label = { Text("New password (min. 8 characters)") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
@@ -238,9 +365,12 @@ private fun SetNewPasswordForm(
             onValueChange = { confirmation = it },
             label = { Text("Confirm new password") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
+        TextButton(onClick = { passwordVisible = !passwordVisible }, modifier = Modifier.align(Alignment.End)) {
+            Text(if (passwordVisible) "Hide password" else "Show password")
+        }
         Button(onClick = { onSubmit(password, confirmation) }, enabled = !isLoading) {
             Text("Update password")
         }
@@ -258,6 +388,7 @@ private fun SignUpForm(
     var displayName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var termsAccepted by remember { mutableStateOf(false) }
     var ageConfirmed by remember { mutableStateOf(false) }
 
@@ -283,9 +414,12 @@ private fun SignUpForm(
             onValueChange = { password = it },
             label = { Text("Password (min. 8 characters)") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
+        TextButton(onClick = { passwordVisible = !passwordVisible }, modifier = Modifier.align(Alignment.End)) {
+            Text(if (passwordVisible) "Hide password" else "Show password")
+        }
 
         ConsentRow(
             checked = termsAccepted,

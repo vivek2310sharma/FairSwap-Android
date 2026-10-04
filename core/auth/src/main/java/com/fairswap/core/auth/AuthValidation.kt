@@ -3,6 +3,16 @@ package com.fairswap.core.auth
 object AuthValidation {
     private val EmailPattern = Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
 
+    fun validateEmail(email: String): String? {
+        if (!EmailPattern.matches(email.trim())) return "Please enter a valid email address."
+        return null
+    }
+
+    fun validateOtp(otp: String): String? {
+        if (!otp.matches(Regex("^[0-9]{6}$"))) return "Please enter a valid 6-digit verification code."
+        return null
+    }
+
     fun validateSignIn(email: String, password: String): String? {
         if (!EmailPattern.matches(email.trim())) return "Please enter a valid email address."
         if (password.isBlank()) return "Password is required."
