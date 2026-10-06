@@ -61,8 +61,8 @@ private class FakeMediaGateway : SellerMediaGateway {
             SellerMediaMutationAcknowledgement.Upload(
                 committed = true,
                         refreshRequired = false,
-                        
-                
+
+
                 snapshot = (snapshotResult as? SellerMediaGetSnapshotResult.Success)?.snapshot,
                 uploadedMediaId = validMediaId,
                 processingStatus = SellerMediaProcessingStatus.READY,
@@ -78,8 +78,8 @@ private class FakeMediaGateway : SellerMediaGateway {
             SellerMediaMutationAcknowledgement.Delete(
                 committed = true,
                         refreshRequired = false,
-                        
-                
+
+
                 snapshot = (snapshotResult as? SellerMediaGetSnapshotResult.Success)?.snapshot,
                 deleted = true,
                 deletedMediaId = mediaId,
@@ -96,8 +96,8 @@ private class FakeMediaGateway : SellerMediaGateway {
             SellerMediaMutationAcknowledgement.Reorder(
                 committed = true,
                         refreshRequired = false,
-                        
-                
+
+
                 snapshot = (snapshotResult as? SellerMediaGetSnapshotResult.Success)?.snapshot,
                 changed = true,
             )
@@ -112,8 +112,8 @@ private class FakeMediaGateway : SellerMediaGateway {
             SellerMediaMutationAcknowledgement.Cover(
                 committed = true,
                         refreshRequired = false,
-                        
-                
+
+
                 snapshot = (snapshotResult as? SellerMediaGetSnapshotResult.Success)?.snapshot,
                 coverPhotoId = mediaId,
             )
@@ -237,7 +237,7 @@ class SellerListingEditorMediaTest {
     fun `serial queue processes one at a time and stops on failure`() = runTest {
         val listingGateway = FakeListingGateway()
         val listingRepo = SellerListingRepository(listingGateway)
-        
+
         var uploadCallCount = 0
         var currentConcurrentUploads = 0
         var maxConcurrentUploads = 0
@@ -245,7 +245,7 @@ class SellerListingEditorMediaTest {
         val completedUploads = mutableListOf<String>()
         var uploadStartBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
         var uploadResumeBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
-        
+
         val mediaGateway = object : SellerMediaGateway {
             override suspend fun getSnapshot(listingId: String) = SellerMediaGetSnapshotResult.Success(
                 SellerMediaSnapshot(
@@ -263,24 +263,24 @@ class SellerListingEditorMediaTest {
                 if (currentConcurrentUploads > maxConcurrentUploads) {
                     maxConcurrentUploads = currentConcurrentUploads
                 }
-                
+
                 uploadStartBarrier.complete(Unit)
                 uploadResumeBarrier.await()
-                
+
                 currentConcurrentUploads--
-                
+
                 if (failureOnNext) {
                     failureOnNext = false
                     return SellerMediaMutationResult.Failure(com.fairswap.core.sellerlistings.SellerMediaFailure.MediaServiceUnavailable)
                 }
-                
+
                 completedUploads.add(file.fileName)
-                
+
                 return SellerMediaMutationResult.Success(
                     SellerMediaMutationAcknowledgement.Upload(
                         committed = true,
                         refreshRequired = false,
-                        
+
                         snapshot = SellerMediaSnapshot(
                             listing = SellerMediaListingSnapshot(validListingId, SellerListingStatus.DRAFT, 1, null),
                             media = emptyList(),
@@ -305,52 +305,52 @@ class SellerListingEditorMediaTest {
 
         val fileA = SellerMediaUploadFile("A", ByteArray(0), "image/jpeg")
         val fileB = SellerMediaUploadFile("B", ByteArray(0), "image/jpeg")
-        
+
         // Start queue
         viewModel.queueUploads(listOf(fileA, fileB))
-        
+
         // Let A reach the barrier
         uploadStartBarrier.await()
         assertEquals(1, uploadCallCount)
         assertEquals(1, currentConcurrentUploads)
         assertEquals(1, maxConcurrentUploads)
         assertTrue(completedUploads.isEmpty())
-        
+
         // Reset start barrier for B
         uploadStartBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
-        
+
         // Resume A
         val resumeA = uploadResumeBarrier
         uploadResumeBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
         resumeA.complete(Unit)
-        
+
         // Wait for B to start
         uploadStartBarrier.await()
         assertEquals(2, uploadCallCount)
         assertEquals(1, currentConcurrentUploads)
         assertEquals(1, maxConcurrentUploads)
         assertEquals(listOf("A"), completedUploads)
-        
+
         // Resume B
         uploadResumeBarrier.complete(Unit)
         testDispatcher.scheduler.advanceUntilIdle()
-        
+
         assertEquals(listOf("A", "B"), completedUploads)
-        
+
         // Now test stop on failure
         completedUploads.clear()
         uploadCallCount = 0
         failureOnNext = true
         uploadStartBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
         uploadResumeBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
-        
+
         viewModel.queueUploads(listOf(fileA, fileB))
-        
+
         uploadStartBarrier.await()
         assertEquals(1, uploadCallCount)
         uploadResumeBarrier.complete(Unit)
         testDispatcher.scheduler.advanceUntilIdle()
-        
+
         // Since A failed, B should never have started
         assertEquals(1, uploadCallCount)
         assertTrue(completedUploads.isEmpty())
@@ -360,11 +360,11 @@ class SellerListingEditorMediaTest {
     fun `stale upload queue stops after session replacement`() = runTest {
         val listingGateway = FakeListingGateway()
         val listingRepo = SellerListingRepository(listingGateway)
-        
+
         var uploadCallCount = 0
         val uploadStartBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
         val uploadResumeBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
-        
+
         val mediaGateway = object : SellerMediaGateway {
             override suspend fun getSnapshot(listingId: String) = SellerMediaGetSnapshotResult.Success(
                 SellerMediaSnapshot(
@@ -380,7 +380,7 @@ class SellerListingEditorMediaTest {
                 uploadCallCount++
                 uploadStartBarrier.complete(Unit)
                 uploadResumeBarrier.await()
-                
+
                 return SellerMediaMutationResult.Success(
                     SellerMediaMutationAcknowledgement.Upload(
                         committed = true,
@@ -409,12 +409,12 @@ class SellerListingEditorMediaTest {
 
         val fileA = SellerMediaUploadFile("A", ByteArray(0), "image/jpeg")
         val fileB = SellerMediaUploadFile("B", ByteArray(0), "image/jpeg")
-        
+
         viewModel.queueUploads(listOf(fileA, fileB))
-        
+
         uploadStartBarrier.await()
         assertEquals(1, uploadCallCount)
-        
+
         // Re-bind to session2 (new generation / route identity)
         val session2 = listingRepo.sessionOwner.updateSession("u1")!! // incremented generation
         viewModel.bind(session2, listingId = validListingId, entryId = "entry2")
@@ -619,7 +619,7 @@ class SellerListingEditorMediaTest {
         val capturedEvent = eventDeferred.await()
         assertTrue(capturedEvent is SellerListingEditorEvent.Restricted)
     }
-    
+
     @Test
     fun `media snapshot preserves listing input pincode and locality state`() = runTest {
         val listingGateway = FakeListingGateway()
@@ -641,7 +641,7 @@ class SellerListingEditorMediaTest {
         assertEquals("Locally Edited", viewModel.state.value.input.title)
         assertEquals("110001", viewModel.state.value.input.pinCode)
         assertEquals("loc_123", viewModel.state.value.input.localityId)
-        
+
         // Emulate incoming snapshot
         viewModel.applyMediaSnapshot(
             expectedSession = session,
@@ -662,7 +662,7 @@ class SellerListingEditorMediaTest {
     fun `stale refresh result after identity change is ignored`() = runTest {
         val listingGateway = FakeListingGateway()
         val listingRepo = SellerListingRepository(listingGateway)
-        
+
         var requestCount = 0
         var suspendBarrier = kotlinx.coroutines.CompletableDeferred<Unit>()
         val mediaGateway = object : SellerMediaGateway {
@@ -683,19 +683,19 @@ class SellerListingEditorMediaTest {
         val session1 = listingRepo.sessionOwner.updateSession("u1")!!
         viewModel.bind(session1, validListingId, "entry1")
         testDispatcher.scheduler.advanceUntilIdle()
-        
+
         // Wait for it to suspend in requestSignedUrl
         assertEquals(1, requestCount)
-        
+
         // Change session identity
         val session2 = listingRepo.sessionOwner.updateSession("u2")!!
         viewModel.bind(session2, validListingId, "entry2")
         testDispatcher.scheduler.advanceUntilIdle()
-        
+
         // Release the first request
         suspendBarrier.complete(Unit)
         testDispatcher.scheduler.advanceUntilIdle()
-        
+
         // Assert the stale URL was NOT applied to the new state
         assertNull(viewModel.state.value.signedUrls["m1"])
     }
