@@ -370,7 +370,14 @@ fun FairSwapApp(
                             ) {
                                 when (event) {
                                     is SellerListingEditorEvent.AuthRequired,
-                                    is SellerListingEditorEvent.PolicyReviewRequired -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    is SellerListingEditorEvent.PolicyReviewRequired,
+                                    is SellerListingEditorEvent.Restricted -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    is SellerListingEditorEvent.Created -> {
+                                        if (backStack.lastOrNull() is CreateSellerListingRoute) {
+                                            backStack.removeLastOrNull()
+                                            backStack.add(EditSellerListingRoute(listingId = event.listingId, entryId = java.util.UUID.randomUUID().toString()))
+                                        }
+                                    }
                                     is SellerListingEditorEvent.Saved,
                                     is SellerListingEditorEvent.Submitted -> backStack.removeLastOrNull()
                                 }
@@ -401,6 +408,14 @@ fun FairSwapApp(
                             onRetryInitialization = viewModel::retryInitialization,
                             onRetryCategoryAttributes = viewModel::retryCategoryAttributes,
                             onRetryLocalities = viewModel::retryLocalities,
+                            onValidatedPhotos = viewModel::queueUploads,
+                            onSetCover = viewModel::setCoverPhoto,
+                            onDeleteMedia = viewModel::deleteMedia,
+                            onMoveLeft = viewModel::moveMediaLeft,
+                            onMoveRight = viewModel::moveMediaRight,
+                            onRetryMedia = viewModel::retryMediaSnapshot,
+                            onImageError = viewModel::onPrivateImageLoadFailed,
+                            onLocalMediaError = viewModel::setMediaErrorMessage,
                         )
                     }
                 }
@@ -429,7 +444,14 @@ fun FairSwapApp(
                             ) {
                                 when (event) {
                                     is SellerListingEditorEvent.AuthRequired,
-                                    is SellerListingEditorEvent.PolicyReviewRequired -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    is SellerListingEditorEvent.PolicyReviewRequired,
+                                    is SellerListingEditorEvent.Restricted -> if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    is SellerListingEditorEvent.Created -> {
+                                        if (backStack.lastOrNull() is CreateSellerListingRoute) {
+                                            backStack.removeLastOrNull()
+                                            backStack.add(EditSellerListingRoute(listingId = event.listingId, entryId = java.util.UUID.randomUUID().toString()))
+                                        }
+                                    }
                                     is SellerListingEditorEvent.Saved,
                                     is SellerListingEditorEvent.Submitted -> backStack.removeLastOrNull()
                                 }
@@ -457,8 +479,17 @@ fun FairSwapApp(
                             onSaveDraft = { viewModel.saveDraft(entryId = key.entryId) },
                             onSubmitListing = { viewModel.submitListing(entryId = key.entryId) },
                             onClearError = viewModel::clearErrorMessage,
+                            onRetryInitialization = viewModel::retryInitialization,
+                            onRetryCategoryAttributes = viewModel::retryCategoryAttributes,
                             onRetryLocalities = viewModel::retryLocalities,
-                            onRetryPincodeLookup = viewModel::retryPincodeLookup,
+                            onValidatedPhotos = viewModel::queueUploads,
+                            onSetCover = viewModel::setCoverPhoto,
+                            onDeleteMedia = viewModel::deleteMedia,
+                            onMoveLeft = viewModel::moveMediaLeft,
+                            onMoveRight = viewModel::moveMediaRight,
+                            onRetryMedia = viewModel::retryMediaSnapshot,
+                            onImageError = viewModel::onPrivateImageLoadFailed,
+                            onLocalMediaError = viewModel::setMediaErrorMessage,
                         )
                     }
                 }

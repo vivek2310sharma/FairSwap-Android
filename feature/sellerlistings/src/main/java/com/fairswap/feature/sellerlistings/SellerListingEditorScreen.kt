@@ -43,9 +43,75 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.fairswap.core.discovery.ListingCondition
 import com.fairswap.core.sellerlistings.formatUnavailableReferenceLabel
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+
+import com.fairswap.feature.sellerlistings.components.SellerMediaSection
+import android.net.Uri
+
+sealed interface SellerMediaReadResult {
+    data class Success(val file: com.fairswap.core.sellerlistings.SellerMediaUploadFile) : SellerMediaReadResult
+    data object FileTooLarge : SellerMediaReadResult
+    data object UnsupportedFormat : SellerMediaReadResult
+    data object Unreadable : SellerMediaReadResult
+}
+
+suspend fun readUriToUploadFile(
+    context: android.content.Context,
+    uri: Uri,
+): SellerMediaReadResult {
+    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val buffer = ByteArray(5 * 1024 * 1024 + 1)
+                var bytesRead = 0
+                var read: Int
+                while (bytesRead < buffer.size) {
+                    read = inputStream.read(buffer, bytesRead, buffer.size - bytesRead)
+                    if (read == -1) break
+                    bytesRead += read
+                }
+
+                if (bytesRead > 5 * 1024 * 1024) return@withContext SellerMediaReadResult.FileTooLarge
+
+                val actualBytes = buffer.copyOf(bytesRead)
+                val format = com.fairswap.core.sellerlistings.SellerMediaValidation.detectFormatFromMagicBytes(actualBytes) ?: return@withContext SellerMediaReadResult.UnsupportedFormat
+
+                var displayName: String? = null
+                try {
+                    context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                            if (nameIndex != -1) {
+                                displayName = cursor.getString(nameIndex)
+                            }
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (_: Exception) {}
+
+                val fileName = com.fairswap.core.sellerlistings.SellerMediaValidation.sanitizeFilename(
+                    filename = displayName,
+                    fallbackExtension = if (format == "image/png") "png" else if (format == "image/webp") "webp" else "jpg",
+                )
+
+                val uploadFile = com.fairswap.core.sellerlistings.SellerMediaUploadFile(
+                    fileName = fileName,
+                    bytes = actualBytes,
+                    detectedFormat = format,
+                )
+                SellerMediaReadResult.Success(uploadFile)
+            } ?: SellerMediaReadResult.Unreadable
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            SellerMediaReadResult.Unreadable
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,8 +137,18 @@ fun SellerListingEditorScreen(
     onRetryCategoryAttributes: () -> Unit = {},
     onRetryLocalities: () -> Unit = {},
     onRetryPincodeLookup: () -> Unit = {},
+    onValidatedPhotos: (List<com.fairswap.core.sellerlistings.SellerMediaUploadFile>) -> Unit = {},
+    onSetCover: (String) -> Unit = {},
+    onDeleteMedia: (String) -> Unit = {},
+    onMoveLeft: (String) -> Unit = {},
+    onMoveRight: (String) -> Unit = {},
+    onRetryMedia: () -> Unit = {},
+    onImageError: (String, String) -> Unit = { _, _ -> },
+    onLocalMediaError: (String) -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
@@ -236,6 +312,50 @@ fun SellerListingEditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 6,
+                )
+
+                // Photos / Media Section
+                com.fairswap.feature.sellerlistings.components.SellerMediaSection(
+                    state = state.mediaSectionState,
+                    onPhotosSelected = { uris ->
+                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val files = mutableListOf<com.fairswap.core.sellerlistings.SellerMediaUploadFile>()
+                            var hasError = false
+                            var errorMsg = ""
+                            for (uri in uris) {
+                                when (val result = readUriToUploadFile(context, uri)) {
+                                    is SellerMediaReadResult.Success -> files.add(result.file)
+                                    SellerMediaReadResult.FileTooLarge -> {
+                                        hasError = true
+                                        errorMsg = "One or more files exceed the 5 MB limit."
+                                    }
+                                    SellerMediaReadResult.UnsupportedFormat -> {
+                                        hasError = true
+                                        errorMsg = "Unsupported format. Use JPEG, PNG, or WebP."
+                                    }
+                                    SellerMediaReadResult.Unreadable -> {
+                                        hasError = true
+                                        errorMsg = "Unable to read one or more files."
+                                    }
+                                }
+                            }
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                if (hasError) {
+                                    onLocalMediaError(errorMsg)
+                                }
+                                if (files.isNotEmpty()) {
+                                    onValidatedPhotos(files)
+                                }
+                            }
+                        }
+                    },
+                    onSetCover = onSetCover,
+                    onDeleteMedia = onDeleteMedia,
+                    onMoveLeft = onMoveLeft,
+                    onMoveRight = onMoveRight,
+                    onRetry = onRetryMedia,
+                    onImageError = onImageError,
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 // Condition Selection

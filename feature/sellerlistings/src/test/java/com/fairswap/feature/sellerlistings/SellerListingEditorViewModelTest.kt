@@ -41,6 +41,28 @@ private val TestCreateRoute = "TestCreateRoute"
 private val validListingUuid = "22222222-3333-4444-5555-000000000001"
 private val validLocalityUuid = "88888888-9999-0000-1111-222222222222"
 
+private class EditorTestMediaGateway : com.fairswap.core.sellerlistings.SellerMediaGateway {
+    override suspend fun getSnapshot(listingId: String) = com.fairswap.core.sellerlistings.SellerMediaGetSnapshotResult.Success(
+        com.fairswap.core.sellerlistings.SellerMediaSnapshot(
+            listing = com.fairswap.core.sellerlistings.SellerMediaListingSnapshot("l1", SellerListingStatus.DRAFT, 1, null),
+            media = emptyList(),
+        )
+    )
+    override suspend fun uploadMedia(listingId: String, file: com.fairswap.core.sellerlistings.SellerMediaUploadFile) =
+        com.fairswap.core.sellerlistings.SellerMediaMutationResult.Failure(com.fairswap.core.sellerlistings.SellerMediaFailure.MediaServiceUnavailable)
+    override suspend fun deleteMedia(listingId: String, mediaId: String) =
+        com.fairswap.core.sellerlistings.SellerMediaMutationResult.Failure(com.fairswap.core.sellerlistings.SellerMediaFailure.MediaServiceUnavailable)
+    override suspend fun reorderMedia(listingId: String, mediaIds: List<String>) =
+        com.fairswap.core.sellerlistings.SellerMediaMutationResult.Failure(com.fairswap.core.sellerlistings.SellerMediaFailure.MediaServiceUnavailable)
+    override suspend fun setCoverPhoto(listingId: String, mediaId: String) =
+        com.fairswap.core.sellerlistings.SellerMediaMutationResult.Failure(com.fairswap.core.sellerlistings.SellerMediaFailure.MediaServiceUnavailable)
+    override suspend fun getSignedDerivativeUrl(listingId: String, mediaId: String, size: String) =
+        com.fairswap.core.sellerlistings.SellerMediaGetSignedUrlResult.Failure(com.fairswap.core.sellerlistings.SellerMediaFailure.MediaServiceUnavailable)
+}
+
+private fun createTestViewModel(repo: SellerListingRepository): SellerListingEditorViewModel =
+    SellerListingEditorViewModel(repo, com.fairswap.core.sellerlistings.SellerMediaRepository(EditorTestMediaGateway(), repo))
+
 private class FakeEditorGateway(
     var userId: String? = "user-123",
     var categoryError: Throwable? = null,
@@ -196,7 +218,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -213,7 +235,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -230,7 +252,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -255,7 +277,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val sessionA = repo.sessionOwner.updateSession("user-A")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(sessionA, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -281,7 +303,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = "entry-1")
         testDispatcher.scheduler.advanceUntilIdle()
@@ -305,7 +327,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -338,7 +360,7 @@ class SellerListingEditorViewModelTest {
         )
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -370,7 +392,7 @@ class SellerListingEditorViewModelTest {
         )
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -398,7 +420,7 @@ class SellerListingEditorViewModelTest {
         )
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -430,7 +452,7 @@ class SellerListingEditorViewModelTest {
         )
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -471,7 +493,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -504,7 +526,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -527,7 +549,7 @@ class SellerListingEditorViewModelTest {
         )
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -563,7 +585,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         // Bind existing listing with validLocalityUuid
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
@@ -617,7 +639,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "123456")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -654,7 +676,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -669,7 +691,7 @@ class SellerListingEditorViewModelTest {
         gateway.nextLookupResponse = PincodeLookupResponseDto(success = false, error = "NETWORK_ERROR")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -687,7 +709,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -716,7 +738,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -738,7 +760,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -762,7 +784,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -785,7 +807,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -808,7 +830,7 @@ class SellerListingEditorViewModelTest {
         gateway.privateLocations[validListingUuid] = SellerPrivateLocationDto(listingId = validListingUuid, pinCode = "560001")
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = validListingUuid, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -827,7 +849,7 @@ class SellerListingEditorViewModelTest {
         )
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -845,7 +867,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -869,7 +891,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -896,7 +918,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -920,7 +942,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         viewModel.updateCategory(validUuid)
@@ -946,7 +968,7 @@ class SellerListingEditorViewModelTest {
         dashboardVm.bind(initialSession)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val editorVm = SellerListingEditorViewModel(repo)
+        val editorVm = createTestViewModel(repo)
         editorVm.bind(initialSession, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -959,7 +981,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -979,7 +1001,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val sessionA = repo.sessionOwner.updateSession("user-A")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(sessionA, listingId = null, entryId = TestCreateRoute)
         viewModel.updateTitle("Secret User A Draft")
@@ -999,7 +1021,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         // First editor entry
         viewModel.bind(session, listingId = null, entryId = "entry-1")
@@ -1018,7 +1040,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         viewModel.updateCity(validCityUuid)
@@ -1038,7 +1060,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         viewModel.updateCity(validCityUuid)
@@ -1099,7 +1121,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway(categoryError = RuntimeException("SECRET_BACKEND_ERR"))
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1116,7 +1138,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway(cityError = RuntimeException("SECRET_CITY_ERR"))
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1133,7 +1155,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway(categoryError = RuntimeException("FAIL"))
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1159,7 +1181,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1195,7 +1217,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1229,7 +1251,7 @@ class SellerListingEditorViewModelTest {
         val gateway = FakeEditorGateway()
         val repo = SellerListingRepository(gateway)
         val session = repo.sessionOwner.updateSession("user-123")!!
-        val viewModel = SellerListingEditorViewModel(repo)
+        val viewModel = createTestViewModel(repo)
 
         viewModel.bind(session, listingId = null, entryId = TestCreateRoute)
         testDispatcher.scheduler.advanceUntilIdle()

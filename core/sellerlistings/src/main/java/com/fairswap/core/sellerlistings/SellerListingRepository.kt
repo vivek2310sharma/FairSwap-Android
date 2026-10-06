@@ -13,6 +13,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeout
 
+fun reconcileListingWithMediaSnapshot(
+    current: SellerListingDetail,
+    snapshot: SellerMediaSnapshot,
+): SellerListingDetail? {
+    if (snapshot.listing.id != current.id) return null
+    val readyCount = snapshot.media.count { it.processingStatus == SellerMediaProcessingStatus.READY }
+    return current.copy(
+        status = snapshot.listing.status,
+        revision = snapshot.listing.revision,
+        coverPhotoId = snapshot.listing.coverPhotoId,
+        readyMediaCount = readyCount,
+    )
+}
+
 data class SellerSession(val userId: String, val generation: Long)
 
 data class SellerMutationLockToken(
