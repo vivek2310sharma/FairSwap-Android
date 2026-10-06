@@ -28,7 +28,11 @@ Media editing is allowed for listings in statuses: `DRAFT`, `REJECTED`, `ACTIVE`
 This rule is exposed via `SellerListingStatus.canEditMedia`.
 
 ## Photo Picker & Validation
-- System Photo Picker via `ActivityResultContracts.PickMultipleVisualMedia`.
+- Adaptive System Photo Picker usage:
+  - 0 remaining slots -> picker disabled
+  - 1 remaining slot -> PickVisualMedia
+  - 2..8 remaining slots -> PickMultipleVisualMedia
+  - returned selection is clamped against latest authoritative remaining capacity
 - Zero broad storage permissions (`READ_EXTERNAL_STORAGE` / `READ_MEDIA_IMAGES` not requested).
 - Bounded 5 MiB file size check during Uri streaming.
 - Magic-byte validation for JPEG (`FF D8 FF`), PNG (`89 50 4E 47`), and WebP (`52 49 46 46 ... 57 41 56 45`).
@@ -44,7 +48,18 @@ This rule is exposed via `SellerListingStatus.canEditMedia`.
 - Committed mutations call `SellerListingRepository.notifyDashboardInvalidated(session)` to refresh My Listings.
 
 ## Testing & Staging
-- Gateway unit tests cover Bearer header injection, `Accept: application/json`, `followRedirects = false`, DTO parsing, error code mapping, and 404 concealment using Ktor `MockEngine`.
-- Repository unit tests cover per-listing mutation locking, snapshot reconciliation, serial upload queueing, cover fallback, and idempotent deletion.
-- ViewModel unit tests cover draft creation navigation events, photo picker capacity clamping, and stale response generation suppression.
-- Staging acceptance on package `com.fairswap.app.staging` is pending.
+- Gateway tests cover HTTP/auth/DTO/error boundaries.
+- Repository tests cover mutation locking, reconciliation, no-replay, reorder/cover validation and dashboard behavior.
+- ViewModel/media tests cover serial upload queue, stale-session handling, picker modes, signed-URL refresh and editor-state reconciliation.
+
+## Staging Acceptance
+Staging acceptance on package `com.fairswap.app.staging` PASSED using disposable fixture `ANDROID5-MEDIA-STAGING-20261005-233600`.
+Verified:
+- Create -> Edit transition with Add Photos enabled after persistence.
+- 3-photo multi-select and serial upload with no duplicate/concurrency error.
+- Cover selection, reorder, non-cover deletion, and cover deletion with authoritative fallback.
+- Authoritative reload, process restart, and private owner thumbnail rehydration.
+- Unsupported GIF safe rejection and picker cancellation.
+- Preservation of title, PIN, and locality state.
+- Single My Listings fixture row.
+- Cleanup leaving empty disposable draft in FairSwapTest, Live Bike untouched, no direct backend mutation, and privacy boundary passed.
