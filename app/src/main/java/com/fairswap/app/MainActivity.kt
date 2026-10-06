@@ -6,14 +6,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.fairswap.app.ui.FairSwapApp
-import com.fairswap.core.designsystem.theme.FairSwapTheme
 import com.fairswap.core.auth.AuthCallbackConfig
 import com.fairswap.core.auth.AuthCallbackCoordinator
 import com.fairswap.core.auth.AuthCallbackKind
 import com.fairswap.core.auth.CallbackClassification
 import com.fairswap.core.auth.RecoveryStateStore
-import com.fairswap.core.favourites.FavouritesRepository
+import com.fairswap.core.communication.CommunicationSessionOwner
+import com.fairswap.core.designsystem.theme.FairSwapTheme
 import com.fairswap.core.favourites.FavouriteStateStore
+import com.fairswap.core.favourites.FavouritesRepository
 import com.fairswap.core.sellerlistings.SellerListingRepository
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var favouritesRepository: FavouritesRepository
     @Inject lateinit var favouriteStateStore: FavouriteStateStore
     @Inject lateinit var sellerRepository: SellerListingRepository
+    @Inject lateinit var communicationSessionOwner: CommunicationSessionOwner
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +38,14 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FairSwapTheme {
-                FairSwapApp(callbackCoordinator, favouritesRepository, favouriteStateStore, sellerRepository, supabase)
+                FairSwapApp(
+                    callbacks = callbackCoordinator,
+                    favouritesRepository = favouritesRepository,
+                    favouriteStore = favouriteStateStore,
+                    sellerRepository = sellerRepository,
+                    communicationSessionOwner = communicationSessionOwner,
+                    supabase = supabase,
+                )
             }
         }
         handleAuthCallback(intent)

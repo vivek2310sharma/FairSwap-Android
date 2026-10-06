@@ -16,10 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +39,8 @@ fun ListingDetailScreen(
     favouriteMutating: Boolean = false,
     onFavourite: (Boolean) -> Unit = {},
     favouriteError: String? = null,
+    isOwner: Boolean = false,
+    onMessageSeller: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -114,17 +116,30 @@ fun ListingDetailScreen(
                         Text("Seller", style = MaterialTheme.typography.titleMedium)
                         Text(detail.seller.displayName)
                         publicDate(detail.seller.createdAt)?.let { Text("Member since $it") }
-                        Button(onClick = { onSeller(detail.sellerId) }) { Text("View Seller Profile") }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { onSeller(detail.sellerId) }) { Text("View Seller Profile") }
+                            if (!isOwner) {
+                                Button(
+                                    onClick = onMessageSeller,
+                                    enabled = !state.isMessagingActionLoading,
+                                ) {
+                                    if (state.isMessagingActionLoading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.height(16.dp).width(16.dp),
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                        )
+                                    } else {
+                                        Text("Message Seller")
+                                    }
+                                }
+                            }
+                        }
+                        state.messagingActionError?.let { err ->
+                            Text(err, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Stay safe on FairSwap", style = MaterialTheme.typography.titleMedium)
-                    Text("Meet in a public place, inspect the item, and avoid paying before you are satisfied.")
-                }
-            }
-            if (state.loading) item { Row { CircularProgressIndicator() } }
         }
     }
 }

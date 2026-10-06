@@ -117,6 +117,8 @@ dependencies {
     implementation(project(":feature:favourites"))
     implementation(project(":core:sellerlistings"))
     implementation(project(":feature:sellerlistings"))
+    implementation(project(":core:communication"))
+    implementation(project(":feature:communication"))
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)
     implementation(libs.ktor.client.okhttp)
@@ -141,5 +143,9 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(project(":core:sellerlistings"))
+    testImplementation(project(":feature:sellerlistings"))
+    testImplementation(project(":core:communication"))
+    testImplementation(project(":feature:communication"))
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

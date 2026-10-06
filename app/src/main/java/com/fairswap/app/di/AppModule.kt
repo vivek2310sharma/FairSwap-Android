@@ -1,37 +1,42 @@
 package com.fairswap.app.di
 
+import android.content.Context
 import com.fairswap.app.BuildConfig
-import com.fairswap.core.auth.AuthRepository
-import com.fairswap.core.auth.SupabaseAuthRepository
 import com.fairswap.core.account.AccountGateway
 import com.fairswap.core.account.AccountRepository
 import com.fairswap.core.account.SupabaseAccountGateway
 import com.fairswap.core.auth.AuthCallbackConfig
-import com.fairswap.core.auth.RecoveryStateStore
 import com.fairswap.core.auth.AuthCallbackCoordinator
-import com.fairswap.core.network.BackendHealthRepository
-import com.fairswap.core.network.FairSwapBackendConfig
-import com.fairswap.core.network.SupabaseClientFactory
+import com.fairswap.core.auth.AuthRepository
+import com.fairswap.core.auth.RecoveryStateStore
+import com.fairswap.core.auth.SupabaseAuthRepository
+import com.fairswap.core.communication.CommunicationCoreFactory
+import com.fairswap.core.communication.CommunicationRepository
+import com.fairswap.core.communication.CommunicationSessionOwner
 import com.fairswap.core.discovery.DiscoveryDataSource
 import com.fairswap.core.discovery.DiscoveryRepository
-import com.fairswap.core.discovery.PublicMediaUrlBuilder
 import com.fairswap.core.discovery.PublicMarketplaceDataSource
 import com.fairswap.core.discovery.PublicMarketplaceGateway
 import com.fairswap.core.discovery.PublicMarketplaceRepository
+import com.fairswap.core.discovery.PublicMediaUrlBuilder
 import com.fairswap.core.discovery.SupabasePublicMarketplaceGateway
+import com.fairswap.core.favourites.FavouriteStateStore
 import com.fairswap.core.favourites.FavouritesGateway
 import com.fairswap.core.favourites.FavouritesRepository
-import com.fairswap.core.favourites.FavouriteStateStore
 import com.fairswap.core.favourites.SupabaseFavouritesGateway
+import com.fairswap.core.network.BackendHealthRepository
+import com.fairswap.core.network.FairSwapBackendConfig
+import com.fairswap.core.network.SupabaseClientFactory
 import com.fairswap.core.sellerlistings.SellerListingGateway
 import com.fairswap.core.sellerlistings.SellerListingRepository
 import com.fairswap.core.sellerlistings.SupabaseSellerListingGateway
+import com.fairswap.feature.communication.CommunicationRequestIdProvider
+import com.fairswap.feature.communication.DefaultCommunicationRequestIdProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.content.Context
+import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import javax.inject.Singleton
 
@@ -178,4 +183,21 @@ object AppModule {
         listingRepository: SellerListingRepository,
     ): com.fairswap.core.sellerlistings.SellerMediaRepository =
         com.fairswap.core.sellerlistings.SellerMediaRepository(gateway, listingRepository)
+
+    @Provides
+    @Singleton
+    fun provideCommunicationSessionOwner(): CommunicationSessionOwner = CommunicationSessionOwner()
+
+    @Provides
+    @Singleton
+    fun provideCommunicationRepository(
+        supabase: SupabaseClient,
+        sessionOwner: CommunicationSessionOwner,
+    ): CommunicationRepository = CommunicationCoreFactory.createRepository(supabase, sessionOwner)
+
+    @Provides
+    @Singleton
+    fun provideCommunicationRequestIdProvider(
+        impl: DefaultCommunicationRequestIdProvider,
+    ): CommunicationRequestIdProvider = impl
 }
