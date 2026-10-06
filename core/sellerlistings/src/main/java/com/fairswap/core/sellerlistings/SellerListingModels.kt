@@ -53,6 +53,7 @@ enum class SellerListingStatus(val wire: String, val label: String) {
     UNKNOWN("unknown", "Unsupported Status");
 
     val canEdit: Boolean get() = this in setOf(DRAFT, ACTIVE, RESERVED, PAUSED, REJECTED)
+    val canEditMedia: Boolean get() = this in setOf(DRAFT, REJECTED, ACTIVE, RESERVED, PAUSED, PENDING_REVIEW)
 
     companion object {
         fun fromWire(wire: String?): SellerListingStatus =

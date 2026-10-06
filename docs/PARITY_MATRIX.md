@@ -16,7 +16,7 @@
 | Favourites | Complete | Complete | Android-3A |
 | Seller listing CRUD/lifecycle | Complete | Complete — Android-4A (Staging acceptance passed: My Listings dashboard, lifecycle Renew, expired -> pending_review, renewal_count increment, revision preservation) | Android-4A |
 | Android PIN-first seller location | Complete | Complete — Android-4B (Staging accepted: PIN-first location workflow, draft save, owner-private PIN/landmark hydration, multi-district choice, scalar jsonb decode) | Android-4B |
-| Listing media pipeline | Complete on Web trusted path | Blocked on mobile-safe media boundary | Android-5 |
+| Listing media pipeline | Complete on Web trusted path | Implemented — staging acceptance pending | Android-5 |
 | Messaging / Realtime | Complete | Not started | Android-6 |
 | In-app notifications | Complete | Not started | Android-6 |
 | Blocking / reports | Complete | Not started | Android-7 |

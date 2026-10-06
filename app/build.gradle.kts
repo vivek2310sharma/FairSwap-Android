@@ -119,6 +119,7 @@ dependencies {
     implementation(project(":feature:sellerlistings"))
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)
+    implementation(libs.ktor.client.okhttp)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

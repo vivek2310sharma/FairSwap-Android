@@ -147,4 +147,35 @@ object AppModule {
         sessionOwner: com.fairswap.core.sellerlistings.SellerSessionOwner,
     ): SellerListingRepository =
         SellerListingRepository(gateway, sessionOwner)
+
+    @Provides
+    @Singleton
+    fun provideSellerMediaConfig(): com.fairswap.core.sellerlistings.SellerMediaConfig =
+        com.fairswap.core.sellerlistings.SellerMediaConfig(
+            webBaseUrl = BuildConfig.FAIRSWAP_WEB_BASE_URL,
+        )
+
+    @Provides
+    @Singleton
+    fun provideMediaHttpClient(): io.ktor.client.HttpClient =
+        io.ktor.client.HttpClient(io.ktor.client.engine.okhttp.OkHttp) {
+            followRedirects = false
+        }
+
+    @Provides
+    @Singleton
+    fun provideSellerMediaGateway(
+        config: com.fairswap.core.sellerlistings.SellerMediaConfig,
+        supabase: SupabaseClient,
+        httpClient: io.ktor.client.HttpClient,
+    ): com.fairswap.core.sellerlistings.SellerMediaGateway =
+        com.fairswap.core.sellerlistings.KtorSellerMediaGateway(config, supabase, httpClient)
+
+    @Provides
+    @Singleton
+    fun provideSellerMediaRepository(
+        gateway: com.fairswap.core.sellerlistings.SellerMediaGateway,
+        listingRepository: SellerListingRepository,
+    ): com.fairswap.core.sellerlistings.SellerMediaRepository =
+        com.fairswap.core.sellerlistings.SellerMediaRepository(gateway, listingRepository)
 }
