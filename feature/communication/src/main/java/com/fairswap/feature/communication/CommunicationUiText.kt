@@ -28,6 +28,14 @@ object CommunicationUiText {
                 "Messaging is temporarily unavailable. Try again."
         }
     }
+
+    fun toNotificationUserFacingMessage(failure: CommunicationFailure): String {
+        return when (failure) {
+            CommunicationFailure.InvalidInput ->
+                "Invalid request."
+            else -> toUserFacingMessage(failure)
+        }
+    }
 }
 
 object CommunicationTimeFormatter {

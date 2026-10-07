@@ -11,12 +11,14 @@ import com.fairswap.core.communication.MessageHistoryCursor
 import com.fairswap.core.communication.MessageRealtimeEvent
 import com.fairswap.core.communication.NotificationRealtimeEvent
 import com.fairswap.core.communication.StartConversationResult
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -31,7 +33,15 @@ import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class FakeFeatureCommunicationRepository : CommunicationRepository {
+internal data class CollectorInvocationRecord(
+    val id: Int,
+    val session: CommunicationSession,
+    var started: Boolean = false,
+    var teardownEntered: Boolean = false,
+    var teardownCompleted: Boolean = false
+)
+
+class FakeFeatureCommunicationRepository : CommunicationRepository {
     var inboxResult: CommunicationResult<List<ConversationSummary>> = CommunicationResult.Success(emptyList())
     var conversationResult: CommunicationResult<ConversationSummary>? = null
     var newestMessagesResult: CommunicationResult<List<ChatMessage>> = CommunicationResult.Success(emptyList())
@@ -108,16 +118,201 @@ internal class FakeFeatureCommunicationRepository : CommunicationRepository {
         return markConversationReadResult
     }
 
+    var notificationsResult: CommunicationResult<List<InAppNotification>> = CommunicationResult.Success(emptyList())
+    var markNotificationReadResult: CommunicationResult<Unit> = CommunicationResult.Success(Unit)
+    var markAllNotificationsReadResult: CommunicationResult<Unit> = CommunicationResult.Success(Unit)
+
+    val fetchNotificationsCallCount = AtomicInteger(0)
+    val markNotificationReadCallCount = AtomicInteger(0)
+    val markAllNotificationsReadCallCount = AtomicInteger(0)
+
+    val markNotificationReadCalls = mutableListOf<Pair<CommunicationSession, String>>()
+    val markAllNotificationsReadCalls = mutableListOf<CommunicationSession>()
+
+    var fetchNotificationsGate: CompletableDeferred<Unit>? = null
+    var markNotificationReadGate: CompletableDeferred<Unit>? = null
+    var markAllNotificationsReadGate: CompletableDeferred<Unit>? = null
+
+        var throwCancellationOnFetchNotifications = false
+    var nonCancellableFetchGates = false
+    var nonCancellableMutationGates = false
+
+    val observedNotificationSubscriptions = mutableListOf<CommunicationSession>()
+    val fetchNotificationsGates = mutableMapOf<Int, CompletableDeferred<Unit>>()
+    val fetchNotificationsResults = mutableMapOf<Int, CommunicationResult<List<InAppNotification>>>()
+
+    data class FetchInvocationRecord(
+        val callIndex: Int,
+        val session: CommunicationSession,
+        val response: CommunicationResult<List<InAppNotification>>,
+        var entered: Boolean = false,
+        var returned: Boolean = false,
+        var canceled: Boolean = false,
+    )
+
+    val fetchNotificationRecords = mutableListOf<FetchInvocationRecord>()
+
     override suspend fun fetchNotifications(session: CommunicationSession): CommunicationResult<List<InAppNotification>> {
-        return CommunicationResult.Success(emptyList())
+        if (throwCancellationOnFetchNotifications) throw kotlinx.coroutines.CancellationException("Job cancelled")
+        val callIndex = fetchNotificationsCallCount.incrementAndGet()
+        val gate = fetchNotificationsGates[callIndex] ?: fetchNotificationsGate
+        val response = fetchNotificationsResults[callIndex] ?: notificationsResult
+
+        val record = FetchInvocationRecord(
+            callIndex = callIndex,
+            session = session,
+            response = response,
+            entered = true,
+        )
+        synchronized(fetchNotificationRecords) {
+            fetchNotificationRecords.add(record)
+        }
+
+        val job = kotlin.coroutines.coroutineContext[Job]
+        job?.invokeOnCompletion { cause ->
+            if (cause is kotlinx.coroutines.CancellationException) {
+                record.canceled = true
+                gate?.cancel(cause)
+            }
+        }
+
+        if (nonCancellableFetchGates && gate != null) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                try {
+                    gate.await()
+                } catch (_: Exception) {}
+                record.returned = true
+            }
+            return response
+        } else {
+            try {
+                gate?.await()
+                record.returned = true
+                return response
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                record.canceled = true
+                throw e
+            }
+        }
     }
+
+    val markNotificationReadGates = mutableMapOf<String, CompletableDeferred<Unit>>()
+    val markNotificationReadResults = mutableMapOf<String, CommunicationResult<Unit>>()
+
+    data class MutationInvocationRecord(
+        val callIndex: Int,
+        val session: CommunicationSession,
+        val id: String?,
+        val response: CommunicationResult<Unit>,
+        val job: Job?,
+        var entered: Boolean = false,
+        var returned: Boolean = false,
+        var canceled: Boolean = false,
+    )
+
+    val markNotificationReadRecords = mutableListOf<MutationInvocationRecord>()
 
     override suspend fun markNotificationRead(session: CommunicationSession, notificationId: String): CommunicationResult<Unit> {
-        return CommunicationResult.Success(Unit)
+        val index = markNotificationReadCallCount.incrementAndGet()
+        synchronized(markNotificationReadCalls) {
+            markNotificationReadCalls.add(Pair(session, notificationId))
+        }
+        val gate = markNotificationReadGates[notificationId] ?: markNotificationReadGate
+        val response = markNotificationReadResults[notificationId] ?: markNotificationReadResult
+        val job = kotlin.coroutines.coroutineContext[Job]
+        val record = MutationInvocationRecord(
+            callIndex = index,
+            session = session,
+            id = notificationId,
+            response = response,
+            job = job,
+            entered = true
+        )
+        synchronized(markNotificationReadRecords) {
+            markNotificationReadRecords.add(record)
+        }
+
+        job?.invokeOnCompletion { cause ->
+            if (cause is kotlinx.coroutines.CancellationException) {
+                record.canceled = true
+            }
+        }
+
+        if (nonCancellableMutationGates && gate != null) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                try {
+                    gate.await()
+                } catch (e: Exception) {
+                    println("DEBUG_GATE_AWAIT_EX: $e")
+                }
+                record.returned = true
+                println("DEBUG_RECORD_RETURNED_SET: record=${record.callIndex}")
+            }
+            return response
+        } else {
+            try {
+                gate?.await()
+                record.returned = true
+                return response
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                record.canceled = true
+                throw e
+            }
+        }
     }
 
+    val markAllNotificationsReadGates = mutableMapOf<Long, CompletableDeferred<Unit>>()
+    val markAllNotificationsReadResults = mutableMapOf<Long, CommunicationResult<Unit>>()
+
+    val markAllNotificationsReadRecords = mutableListOf<MutationInvocationRecord>()
+
     override suspend fun markAllNotificationsRead(session: CommunicationSession): CommunicationResult<Unit> {
-        return CommunicationResult.Success(Unit)
+        val index = markAllNotificationsReadCallCount.incrementAndGet()
+        synchronized(markAllNotificationsReadCalls) {
+            markAllNotificationsReadCalls.add(session)
+        }
+        val gate = markAllNotificationsReadGates[index.toLong()] ?: markAllNotificationsReadGate
+        val response = markAllNotificationsReadResults[index.toLong()] ?: markAllNotificationsReadResult
+        val job = kotlin.coroutines.coroutineContext[Job]
+        val record = MutationInvocationRecord(
+            callIndex = index,
+            session = session,
+            id = null,
+            response = response,
+            job = job,
+            entered = true
+        )
+        synchronized(markAllNotificationsReadRecords) {
+            markAllNotificationsReadRecords.add(record)
+        }
+
+        job?.invokeOnCompletion { cause ->
+            if (cause is kotlinx.coroutines.CancellationException) {
+                record.canceled = true
+            }
+        }
+
+        if (nonCancellableMutationGates && gate != null) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                try {
+                    gate.await()
+                } catch (e: Exception) {
+                    println("DEBUG_GATE_AWAIT_EX: $e")
+                }
+                record.returned = true
+                println("DEBUG_RECORD_RETURNED_SET: record=${record.callIndex}")
+            }
+            return response
+        } else {
+            try {
+                gate?.await()
+                record.returned = true
+                return response
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                record.canceled = true
+                throw e
+            }
+        }
     }
 
     val observedSubscriptions = mutableListOf<Pair<CommunicationSession, String>>()
@@ -136,8 +331,41 @@ internal class FakeFeatureCommunicationRepository : CommunicationRepository {
         return getConversationEventFlow(conversationId)
     }
 
+    val activeNotificationCollectorsCount = AtomicInteger(0)
+    val peakActiveNotificationCollectorsCount = AtomicInteger(0)
+    val collectorInvocationCount = AtomicInteger(0)
+    internal val collectorInvocationRecords = mutableListOf<CollectorInvocationRecord>()
+    val collectorTeardownGates = mutableMapOf<Int, CompletableDeferred<Unit>>()
+    var notificationTeardownGate: CompletableDeferred<Unit>? = null
+
     override fun observeNotificationEvents(session: CommunicationSession): Flow<NotificationRealtimeEvent> {
-        return notificationEventFlow
+        val collectorId = collectorInvocationCount.incrementAndGet()
+        val record = CollectorInvocationRecord(id = collectorId, session = session, started = true)
+        synchronized(collectorInvocationRecords) {
+            collectorInvocationRecords.add(record)
+        }
+        synchronized(observedNotificationSubscriptions) {
+            observedNotificationSubscriptions.add(session)
+        }
+        return flow {
+            val current = activeNotificationCollectorsCount.incrementAndGet()
+            peakActiveNotificationCollectorsCount.updateAndGet { maxOf(it, current) }
+            try {
+                notificationEventFlow.collect { emit(it) }
+            } finally {
+                record.teardownEntered = true
+                val gate = collectorTeardownGates[collectorId] ?: notificationTeardownGate
+                if (gate != null) {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                        try {
+                            gate.await()
+                        } catch (_: Exception) {}
+                    }
+                }
+                record.teardownCompleted = true
+                activeNotificationCollectorsCount.decrementAndGet()
+            }
+        }
     }
 }
 

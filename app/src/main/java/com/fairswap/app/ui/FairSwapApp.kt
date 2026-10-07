@@ -2,13 +2,20 @@ package com.fairswap.app.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +49,8 @@ import com.fairswap.feature.communication.InboxScreen
 import com.fairswap.feature.communication.InboxViewModel
 import com.fairswap.feature.communication.NewInquiryScreen
 import com.fairswap.feature.communication.NewInquiryViewModel
+import com.fairswap.feature.communication.NotificationsScreen
+import com.fairswap.feature.communication.NotificationsViewModel
 import com.fairswap.feature.communication.ThreadScreen
 import com.fairswap.feature.communication.ThreadViewModel
 import com.fairswap.feature.discovery.DiscoveryScreen
@@ -86,6 +95,9 @@ data object MyListingsRoute : NavKey
 
 @Serializable
 data object MessagesRoute : NavKey
+
+@Serializable
+data object NotificationsRoute : NavKey
 
 @Serializable
 data class NewInquiryRoute(val listingId: String) : NavKey
@@ -136,6 +148,17 @@ internal fun canConsumeMessagingEvent(
         if (topListingId != eventListingId) return false
     }
     return true
+}
+
+internal fun canConsumeNotificationEvent(
+    eventSession: CommunicationSession,
+    activeSession: CommunicationSession?,
+    liveUserId: String?,
+    topRoute: NavKey?,
+): Boolean {
+    if (activeSession == null || liveUserId == null) return false
+    if (eventSession != activeSession || activeSession.userId != liveUserId) return false
+    return topRoute is NotificationsRoute
 }
 
 @Composable
@@ -335,6 +358,74 @@ fun FairSwapApp(
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }
+                NotificationsRoute -> NavEntry(key) {
+                    val viewModel: NotificationsViewModel = hiltViewModel()
+                    val state = viewModel.uiState.collectAsStateWithLifecycle().value
+                    val currentSession = activeCommunicationSession
+                    val currentLiveUserId by rememberUpdatedState(liveSessionUserId)
+
+                    LaunchedEffect(viewModel, currentSession) {
+                        viewModel.bind(currentSession)
+                    }
+
+                    LaunchedEffect(viewModel) {
+                        viewModel.events.collect { event ->
+                            val latestSession = communicationSessionOwner.currentSession()
+                            when (event) {
+                                is CommunicationNavigationEvent.NavigateToConversation -> {
+                                    if (canConsumeNotificationEvent(event.session, latestSession, currentLiveUserId, backStack.lastOrNull())) {
+                                        backStack.add(ConversationRoute(event.conversationId))
+                                    }
+                                }
+                                is CommunicationNavigationEvent.NavigateToMyListings -> {
+                                    if (canConsumeNotificationEvent(event.session, latestSession, currentLiveUserId, backStack.lastOrNull())) {
+                                        backStack.add(MyListingsRoute)
+                                    }
+                                }
+                                is CommunicationNavigationEvent.NavigateToAuth -> {
+                                    if (canConsumeNotificationEvent(event.session, latestSession, currentLiveUserId, backStack.lastOrNull())) {
+                                        if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+                                    }
+                                }
+                                else -> Unit
+                            }
+                        }
+                    }
+
+                    // Render loading state while rebinding or if there's no active session
+                    // Ensure we only render the UI when the session matches the current live session
+                    val isSessionAligned = currentSession != null && state.boundSession == currentSession && currentSession.userId == liveSessionUserId
+
+                    if (!isSessionAligned) {
+                        Scaffold(
+                            topBar = {
+                                @OptIn(ExperimentalMaterial3Api::class)
+                                TopAppBar(
+                                    title = { Text("Notifications") },
+                                    navigationIcon = { TextButton(onClick = { backStack.removeLastOrNull() }) { Text("Back") } },
+                                )
+                            }
+                        ) { paddingValues ->
+                            Box(Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                                if (liveSessionUserId == null) {
+                                    Text("Please sign in to view notifications.")
+                                } else {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+                    } else {
+                        NotificationsScreen(
+                            state = state,
+                            onVisible = viewModel::onVisible,
+                            onNotVisible = viewModel::onNotVisible,
+                            onRefresh = viewModel::refresh,
+                            onNotificationTapped = viewModel::onNotificationTapped,
+                            onMarkAllRead = viewModel::markAllRead,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                }
                 is NewInquiryRoute -> NavEntry(key) {
                     val viewModel: NewInquiryViewModel = hiltViewModel()
                     val state = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -458,6 +549,7 @@ fun FairSwapApp(
                             onFavourites = { backStack.add(FavouritesRoute) },
                             onMyListings = { backStack.add(MyListingsRoute) },
                             onMessages = { backStack.add(MessagesRoute) },
+                            onNotifications = { backStack.add(NotificationsRoute) },
                             onSignOut = authViewModel::signOut,
                         )
                     } else {
