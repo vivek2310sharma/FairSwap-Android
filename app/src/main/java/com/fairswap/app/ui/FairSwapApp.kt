@@ -76,7 +76,7 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
-private data object AuthRoute : NavKey
+internal data object AuthRoute : NavKey
 
 @Serializable
 private data object DiscoveryRoute : NavKey
@@ -113,6 +113,108 @@ data class EditSellerListingRoute(
     val listingId: String,
     val entryId: String,
 ) : NavKey
+
+internal fun canConsumeSellerSessionEvent(
+    eventSession: SellerSession,
+    activeSession: SellerSession?,
+    liveUserId: String?,
+): Boolean {
+    if (activeSession == null || liveUserId == null) return false
+    return eventSession == activeSession && activeSession.userId == liveUserId
+}
+
+internal fun handleMyListingsEvent(
+    event: MyListingsEvent,
+    activeSession: SellerSession?,
+    liveUserId: String?,
+    topRoute: NavKey?,
+    backStack: MutableList<NavKey>,
+) {
+    if (!canConsumeSellerSessionEvent(event.session, activeSession, liveUserId)) {
+        return
+    }
+    when (event) {
+        is MyListingsEvent.AuthRequired,
+        is MyListingsEvent.PolicyReviewRequired -> {
+            if (topRoute != AuthRoute && backStack.lastOrNull() != AuthRoute) {
+                backStack.add(AuthRoute)
+            }
+        }
+    }
+}
+
+internal fun handleSellerEditorEvent(
+    event: SellerListingEditorEvent,
+    activeSession: SellerSession?,
+    liveUserId: String?,
+    topRoute: NavKey?,
+    backStack: MutableList<NavKey>,
+) {
+    if (!canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveUserId, topRoute)) {
+        return
+    }
+    when (event) {
+        is SellerListingEditorEvent.AuthRequired,
+        is SellerListingEditorEvent.PolicyReviewRequired,
+        is SellerListingEditorEvent.Restricted -> {
+            if (topRoute != AuthRoute && backStack.lastOrNull() != AuthRoute) {
+                backStack.add(AuthRoute)
+            }
+        }
+        is SellerListingEditorEvent.Created -> {
+            if (topRoute is CreateSellerListingRoute) {
+                backStack.removeLastOrNull()
+                backStack.add(EditSellerListingRoute(listingId = event.listingId, entryId = UUID.randomUUID().toString()))
+            }
+        }
+        is SellerListingEditorEvent.Saved,
+        is SellerListingEditorEvent.Submitted -> {
+            if (topRoute is CreateSellerListingRoute || topRoute is EditSellerListingRoute) {
+                backStack.removeLastOrNull()
+            }
+        }
+    }
+}
+
+internal data class SellerEditorCallbacks(
+    val onRetryInitialization: () -> Unit,
+    val onRetryCategoryAttributes: () -> Unit,
+    val onRetryLocalities: () -> Unit,
+    val onValidatedPhotos: (List<com.fairswap.core.sellerlistings.SellerMediaUploadFile>) -> Unit,
+    val onSetCover: (String) -> Unit,
+    val onDeleteMedia: (String) -> Unit,
+    val onMoveLeft: (String) -> Unit,
+    val onMoveRight: (String) -> Unit,
+    val onRetryMedia: () -> Unit,
+    val onImageError: (String, String) -> Unit,
+    val onLocalMediaError: (String) -> Unit,
+)
+
+internal fun createSellerEditorCallbacks(
+    onRetryInitialization: () -> Unit,
+    onRetryCategoryAttributes: () -> Unit,
+    onRetryLocalities: () -> Unit,
+    onValidatedPhotos: (List<com.fairswap.core.sellerlistings.SellerMediaUploadFile>) -> Unit,
+    onSetCover: (String) -> Unit,
+    onDeleteMedia: (String) -> Unit,
+    onMoveLeft: (String) -> Unit,
+    onMoveRight: (String) -> Unit,
+    onRetryMedia: () -> Unit,
+    onImageError: (String, String) -> Unit,
+    onLocalMediaError: (String) -> Unit,
+): SellerEditorCallbacks = SellerEditorCallbacks(
+    onRetryInitialization = onRetryInitialization,
+    onRetryCategoryAttributes = onRetryCategoryAttributes,
+    onRetryLocalities = onRetryLocalities,
+    onValidatedPhotos = onValidatedPhotos,
+    onSetCover = onSetCover,
+    onDeleteMedia = onDeleteMedia,
+    onMoveLeft = onMoveLeft,
+    onMoveRight = onMoveRight,
+    onRetryMedia = onRetryMedia,
+    onImageError = onImageError,
+    onLocalMediaError = onLocalMediaError,
+)
 
 internal fun canConsumeSellerEditorEvent(
     eventSession: SellerSession,
@@ -577,19 +679,25 @@ fun FairSwapApp(
                 MyListingsRoute -> NavEntry(key) {
                     val myListingsViewModel: MyListingsViewModel = hiltViewModel()
                     val state = myListingsViewModel.state.collectAsStateWithLifecycle().value
+                    val currentLiveUserState = rememberUpdatedState(liveSessionUserId)
+                    val currentActiveSessionState = rememberUpdatedState(activeSellerSession)
 
                     LaunchedEffect(myListingsViewModel, activeSellerSession) {
                         myListingsViewModel.bind(activeSellerSession)
+                        if (liveSessionUserId == null && backStack.lastOrNull() != AuthRoute) {
+                            backStack.add(AuthRoute)
+                        }
                     }
 
                     LaunchedEffect(myListingsViewModel) {
                         myListingsViewModel.events.collect { event ->
-                            when (event) {
-                                is MyListingsEvent.AuthRequired,
-                                is MyListingsEvent.PolicyReviewRequired -> {
-                                    if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
-                                }
-                            }
+                            handleMyListingsEvent(
+                                event = event,
+                                activeSession = currentActiveSessionState.value,
+                                liveUserId = currentLiveUserState.value,
+                                topRoute = backStack.lastOrNull(),
+                                backStack = backStack,
+                            )
                         }
                     }
 
@@ -612,42 +720,26 @@ fun FairSwapApp(
                 is CreateSellerListingRoute -> NavEntry(key) {
                     val editorViewModel: SellerListingEditorViewModel = hiltViewModel()
                     val state = editorViewModel.state.collectAsStateWithLifecycle().value
+                    val currentTopEntryState = rememberUpdatedState(backStack.lastOrNull())
+                    val currentLiveUserState = rememberUpdatedState(liveSessionUserId)
+                    val currentActiveSessionState = rememberUpdatedState(activeSellerSession)
 
                     LaunchedEffect(editorViewModel, activeSellerSession, key.entryId) {
                         editorViewModel.bind(activeSellerSession, null, key.entryId)
+                        if (liveSessionUserId == null && backStack.lastOrNull() != AuthRoute) {
+                            backStack.add(AuthRoute)
+                        }
                     }
 
                     LaunchedEffect(editorViewModel) {
                         editorViewModel.events.collect { event ->
-                            val activeSession = sellerRepository.sessionOwner.session.value
-                            when (event) {
-                                is SellerListingEditorEvent.Created -> {
-                                    if (canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveSessionUserId, backStack.lastOrNull())) {
-                                        if (backStack.lastOrNull() is CreateSellerListingRoute) {
-                                            backStack.removeLastOrNull()
-                                        }
-                                        backStack.add(ListingDetailRoute(event.listingId))
-                                    }
-                                }
-                                is SellerListingEditorEvent.Saved -> {
-                                    if (canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveSessionUserId, backStack.lastOrNull())) {
-                                        if (backStack.lastOrNull() is CreateSellerListingRoute) {
-                                            backStack.removeLastOrNull()
-                                        }
-                                        backStack.add(ListingDetailRoute(event.listingId))
-                                    }
-                                }
-                                is SellerListingEditorEvent.Submitted -> {
-                                    if (canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveSessionUserId, backStack.lastOrNull())) {
-                                        backStack.removeLastOrNull()
-                                    }
-                                }
-                                is SellerListingEditorEvent.AuthRequired,
-                                is SellerListingEditorEvent.PolicyReviewRequired,
-                                is SellerListingEditorEvent.Restricted -> {
-                                    if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
-                                }
-                            }
+                            handleSellerEditorEvent(
+                                event = event,
+                                activeSession = currentActiveSessionState.value,
+                                liveUserId = currentLiveUserState.value,
+                                topRoute = currentTopEntryState.value,
+                                backStack = backStack,
+                            )
                         }
                     }
 
@@ -656,6 +748,19 @@ fun FairSwapApp(
                             CircularProgressIndicator()
                         }
                     } else {
+                        val callbacks = createSellerEditorCallbacks(
+                            onRetryInitialization = editorViewModel::retryInitialization,
+                            onRetryCategoryAttributes = editorViewModel::retryCategoryAttributes,
+                            onRetryLocalities = editorViewModel::retryLocalities,
+                            onValidatedPhotos = editorViewModel::queueUploads,
+                            onSetCover = editorViewModel::setCoverPhoto,
+                            onDeleteMedia = editorViewModel::deleteMedia,
+                            onMoveLeft = editorViewModel::moveMediaLeft,
+                            onMoveRight = editorViewModel::moveMediaRight,
+                            onRetryMedia = editorViewModel::retryMediaSnapshot,
+                            onImageError = editorViewModel::onPrivateImageLoadFailed,
+                            onLocalMediaError = editorViewModel::setMediaErrorMessage,
+                        )
                         SellerListingEditorScreen(
                             state = state,
                             onBack = { backStack.removeLastOrNull() },
@@ -674,48 +779,43 @@ fun FairSwapApp(
                             onSaveDraft = { editorViewModel.saveDraft(key.entryId) },
                             onSubmitListing = { editorViewModel.submitListing(key.entryId) },
                             onClearError = editorViewModel::clearErrorMessage,
+                            onRetryInitialization = callbacks.onRetryInitialization,
+                            onRetryCategoryAttributes = callbacks.onRetryCategoryAttributes,
+                            onRetryLocalities = callbacks.onRetryLocalities,
+                            onValidatedPhotos = callbacks.onValidatedPhotos,
+                            onSetCover = callbacks.onSetCover,
+                            onDeleteMedia = callbacks.onDeleteMedia,
+                            onMoveLeft = callbacks.onMoveLeft,
+                            onMoveRight = callbacks.onMoveRight,
+                            onRetryMedia = callbacks.onRetryMedia,
+                            onImageError = callbacks.onImageError,
+                            onLocalMediaError = callbacks.onLocalMediaError,
                         )
                     }
                 }
                 is EditSellerListingRoute -> NavEntry(key) {
                     val editorViewModel: SellerListingEditorViewModel = hiltViewModel()
                     val state = editorViewModel.state.collectAsStateWithLifecycle().value
+                    val currentTopEntryState = rememberUpdatedState(backStack.lastOrNull())
+                    val currentLiveUserState = rememberUpdatedState(liveSessionUserId)
+                    val currentActiveSessionState = rememberUpdatedState(activeSellerSession)
 
                     LaunchedEffect(editorViewModel, activeSellerSession, key.listingId, key.entryId) {
                         editorViewModel.bind(activeSellerSession, key.listingId, key.entryId)
+                        if (liveSessionUserId == null && backStack.lastOrNull() != AuthRoute) {
+                            backStack.add(AuthRoute)
+                        }
                     }
 
                     LaunchedEffect(editorViewModel) {
                         editorViewModel.events.collect { event ->
-                            val activeSession = sellerRepository.sessionOwner.session.value
-                            when (event) {
-                                is SellerListingEditorEvent.Created -> {
-                                    if (canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveSessionUserId, backStack.lastOrNull())) {
-                                        if (backStack.lastOrNull() is EditSellerListingRoute) {
-                                            backStack.removeLastOrNull()
-                                        }
-                                        backStack.add(ListingDetailRoute(event.listingId))
-                                    }
-                                }
-                                is SellerListingEditorEvent.Saved -> {
-                                    if (canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveSessionUserId, backStack.lastOrNull())) {
-                                        if (backStack.lastOrNull() is EditSellerListingRoute) {
-                                            backStack.removeLastOrNull()
-                                        }
-                                        backStack.add(ListingDetailRoute(event.listingId))
-                                    }
-                                }
-                                is SellerListingEditorEvent.Submitted -> {
-                                    if (canConsumeSellerEditorEvent(event.session, event.entryId, activeSession, liveSessionUserId, backStack.lastOrNull())) {
-                                        backStack.removeLastOrNull()
-                                    }
-                                }
-                                is SellerListingEditorEvent.AuthRequired,
-                                is SellerListingEditorEvent.PolicyReviewRequired,
-                                is SellerListingEditorEvent.Restricted -> {
-                                    if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
-                                }
-                            }
+                            handleSellerEditorEvent(
+                                event = event,
+                                activeSession = currentActiveSessionState.value,
+                                liveUserId = currentLiveUserState.value,
+                                topRoute = currentTopEntryState.value,
+                                backStack = backStack,
+                            )
                         }
                     }
 
@@ -724,6 +824,19 @@ fun FairSwapApp(
                             CircularProgressIndicator()
                         }
                     } else {
+                        val callbacks = createSellerEditorCallbacks(
+                            onRetryInitialization = editorViewModel::retryInitialization,
+                            onRetryCategoryAttributes = editorViewModel::retryCategoryAttributes,
+                            onRetryLocalities = editorViewModel::retryLocalities,
+                            onValidatedPhotos = editorViewModel::queueUploads,
+                            onSetCover = editorViewModel::setCoverPhoto,
+                            onDeleteMedia = editorViewModel::deleteMedia,
+                            onMoveLeft = editorViewModel::moveMediaLeft,
+                            onMoveRight = editorViewModel::moveMediaRight,
+                            onRetryMedia = editorViewModel::retryMediaSnapshot,
+                            onImageError = editorViewModel::onPrivateImageLoadFailed,
+                            onLocalMediaError = editorViewModel::setMediaErrorMessage,
+                        )
                         SellerListingEditorScreen(
                             state = state,
                             onBack = { backStack.removeLastOrNull() },
@@ -742,6 +855,17 @@ fun FairSwapApp(
                             onSaveDraft = { editorViewModel.saveDraft(key.entryId) },
                             onSubmitListing = { editorViewModel.submitListing(key.entryId) },
                             onClearError = editorViewModel::clearErrorMessage,
+                            onRetryInitialization = callbacks.onRetryInitialization,
+                            onRetryCategoryAttributes = callbacks.onRetryCategoryAttributes,
+                            onRetryLocalities = callbacks.onRetryLocalities,
+                            onValidatedPhotos = callbacks.onValidatedPhotos,
+                            onSetCover = callbacks.onSetCover,
+                            onDeleteMedia = callbacks.onDeleteMedia,
+                            onMoveLeft = callbacks.onMoveLeft,
+                            onMoveRight = callbacks.onMoveRight,
+                            onRetryMedia = callbacks.onRetryMedia,
+                            onImageError = callbacks.onImageError,
+                            onLocalMediaError = callbacks.onLocalMediaError,
                         )
                     }
                 }
