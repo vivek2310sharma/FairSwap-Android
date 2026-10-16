@@ -19,6 +19,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -40,6 +41,30 @@ import com.fairswap.core.sellerlistings.SellerSession
 import com.fairswap.core.sellerlistings.canRenderSellerState
 import com.fairswap.feature.account.AccountEvent
 import com.fairswap.feature.account.AccountScreen
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.fairswap.app.ui.AppTab
+import com.fairswap.app.ui.AppBottomBar
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.fairswap.feature.account.safety.PrivacyScreen
+import com.fairswap.feature.account.safety.PrivacyViewModel
+import com.fairswap.feature.account.safety.ReportScreen
+import com.fairswap.feature.account.safety.ReportViewModel
+import com.fairswap.core.account.ReportTargetType
+import com.fairswap.core.account.SafetySession
+import com.fairswap.feature.account.safety.BlockedUsersScreen
+import com.fairswap.feature.account.safety.BlockedUsersViewModel
+import com.fairswap.feature.account.safety.PrivacyEvent
+import com.fairswap.feature.account.safety.ReportEvent
+import com.fairswap.feature.account.safety.BlockedUsersEvent
+import com.fairswap.app.ui.SafetyRoutesViewModel
+import android.widget.Toast
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import com.fairswap.core.designsystem.components.FairSwapComingSoonScreen
 import com.fairswap.feature.account.AccountUiState
 import com.fairswap.feature.account.AccountViewModel
 import com.fairswap.feature.auth.AuthScreen
@@ -91,6 +116,18 @@ data class SellerProfileRoute(val sellerId: String) : NavKey
 data object FavouritesRoute : NavKey
 
 @Serializable
+data class ReportRoute(val targetType: String, val targetId: String) : NavKey
+
+@Serializable
+data object BlockedUsersRoute : NavKey
+
+@Serializable
+data object PrivacyRoute : NavKey
+
+@Serializable
+data object SafetyCenterRoute : NavKey
+
+@Serializable
 data object MyListingsRoute : NavKey
 
 @Serializable
@@ -112,6 +149,12 @@ data class CreateSellerListingRoute(val entryId: String) : NavKey
 data class EditSellerListingRoute(
     val listingId: String,
     val entryId: String,
+) : NavKey
+
+@Serializable
+data class ComingSoonRoute(
+    val featureTitle: String,
+    val featureDescription: String
 ) : NavKey
 
 internal fun canConsumeSellerSessionEvent(
@@ -271,8 +314,25 @@ fun FairSwapApp(
     sellerRepository: SellerListingRepository,
     communicationSessionOwner: CommunicationSessionOwner,
     supabase: SupabaseClient,
+    selectedLanguage: String = "en",
+    onLanguageSelected: (String) -> Unit = {},
 ) {
-    val backStack = rememberNavBackStack(DiscoveryRoute)
+    var currentTab by rememberSaveable { mutableStateOf(AppTab.HOME) }
+
+    val homeBackStack = rememberNavBackStack(DiscoveryRoute)
+    val savedBackStack = rememberNavBackStack(FavouritesRoute)
+    val sellBackStack = rememberNavBackStack(MyListingsRoute)
+    val chatsBackStack = rememberNavBackStack(MessagesRoute)
+    val youBackStack = rememberNavBackStack(AuthRoute)
+
+    val backStack = when (currentTab) {
+        AppTab.HOME -> homeBackStack
+        AppTab.SAVED -> savedBackStack
+        AppTab.SELL -> sellBackStack
+        AppTab.CHATS -> chatsBackStack
+        AppTab.YOU -> youBackStack
+    }
+
     val pendingNavigation = callbacks.pendingNavigation.collectAsStateWithLifecycle().value
     val sessionStatus = supabase.auth.sessionStatus.collectAsStateWithLifecycle().value
     val liveSessionUserId = when (val status = sessionStatus) {
@@ -308,36 +368,65 @@ fun FairSwapApp(
 
     LaunchedEffect(pendingNavigation) {
         pendingNavigation?.let { sequence ->
-            if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute)
+            if (youBackStack.lastOrNull() != AuthRoute) youBackStack.add(AuthRoute)
+            currentTab = AppTab.YOU
             callbacks.acknowledgeNavigation(sequence)
         }
     }
 
-    NavDisplay(
-        backStack = backStack,
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator(),
-        ),
-        onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
-        entryProvider = { key ->
-            when (key) {
-                DiscoveryRoute -> NavEntry(key) {
-                    val discoveryViewModel: DiscoveryViewModel = hiltViewModel()
-                    val discoveryState = discoveryViewModel.state.collectAsStateWithLifecycle().value
-                    val visibleIds = discoveryState.results.items.map { it.id }
-                    LaunchedEffect(visibleIds, favouriteSnapshot.userId, favouriteSnapshot.generation) { favouritesRepository.lookup(visibleIds) }
-                    DiscoveryScreen(
-                        state = discoveryState,
-                        onEdit = discoveryViewModel::editFilters,
-                        onCitySelected = discoveryViewModel::selectCity,
-                        onApply = discoveryViewModel::applyFilters,
-                        onClear = discoveryViewModel::clearFilters,
-                        onRefresh = discoveryViewModel::refresh,
-                        onLoadMore = discoveryViewModel::loadMore,
-                        onRetryMetadata = discoveryViewModel::retryMetadata,
-                        onAccount = { if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute) },
-                        onListingSelected = { id -> backStack.add(ListingDetailRoute(id)) },
+    val saveableStateHolder = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+
+    Scaffold(
+        bottomBar = {
+            AppBottomBar(
+                currentTab = currentTab,
+                onTabSelected = { tab -> currentTab = tab }
+            )
+        }
+    ) { innerPadding ->
+        saveableStateHolder.SaveableStateProvider(currentTab) {
+            val activeBackStack = backStack
+            NavDisplay(
+                backStack = activeBackStack,
+                modifier = Modifier.padding(innerPadding),
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+                onBack = { 
+                    if (activeBackStack.size > 1) {
+                        activeBackStack.removeLastOrNull()
+                    } else if (currentTab != AppTab.HOME) {
+                        currentTab = AppTab.HOME
+                    }
+                },
+                entryProvider = { key ->
+                    when (key) {
+                        DiscoveryRoute -> NavEntry(key) {
+                            val discoveryViewModel: DiscoveryViewModel = hiltViewModel()
+                            val discoveryState = discoveryViewModel.state.collectAsStateWithLifecycle().value
+                            val visibleIds = discoveryState.results.items.map { it.id }
+                            LaunchedEffect(visibleIds, favouriteSnapshot.userId, favouriteSnapshot.generation) { favouritesRepository.lookup(visibleIds) }
+                            DiscoveryScreen(
+                                state = discoveryState,
+                                onEdit = discoveryViewModel::editFilters,
+                                onCitySelected = discoveryViewModel::selectCity,
+                                onApply = discoveryViewModel::applyFilters,
+                                onClear = discoveryViewModel::clearFilters,
+                                onRefresh = discoveryViewModel::refresh,
+                                onRecentSearchSelected = discoveryViewModel::selectRecentSearch,
+                                onClearRecentSearches = discoveryViewModel::clearRecentSearches,
+                                onLoadMore = discoveryViewModel::loadMore,
+                                onRetryMetadata = discoveryViewModel::retryMetadata,
+                                onAccount = { 
+                                    if (youBackStack.lastOrNull() != AuthRoute) youBackStack.add(AuthRoute)
+                                    currentTab = AppTab.YOU
+                                },
+                                onNotifications = {
+                                    if (youBackStack.lastOrNull() != NotificationsRoute) youBackStack.add(NotificationsRoute)
+                                    currentTab = AppTab.YOU
+                                },
+                                onListingSelected = { id -> activeBackStack.add(ListingDetailRoute(id)) },
                         favouriteValues = favouriteSnapshot.values,
                         mutatingIds = favouriteSnapshot.mutating,
                         onFavourite = { id, desired ->
@@ -355,6 +444,8 @@ fun FairSwapApp(
                 }
                 is ListingDetailRoute -> NavEntry(key) {
                     val viewModel: ListingDetailViewModel = hiltViewModel()
+                    val safetyRoutesViewModel: SafetyRoutesViewModel = hiltViewModel()
+                    val context = LocalContext.current
                     val state = viewModel.state.collectAsStateWithLifecycle().value
                     LaunchedEffect(key.listingId, favouriteSnapshot.userId, favouriteSnapshot.generation) { viewModel.syncFavourite(key.listingId) }
                     LaunchedEffect(key.listingId) { viewModel.load(key.listingId) }
@@ -403,17 +494,57 @@ fun FairSwapApp(
                         favouriteError = favouriteError,
                         isOwner = isOwner,
                         onMessageSeller = { viewModel.onMessageSellerClicked(communicationSessionOwner.currentSession()) },
+                        onReportListing = { id -> activeBackStack.add(ReportRoute("listing", id)) },
+                        onMakeOffer = { activeBackStack.add(ComingSoonRoute("Make Offer", "Price negotiation and offers will be available in a future update.")) },
+                        onBuyNow = { activeBackStack.add(ComingSoonRoute("Protected Payments", "FairSwap protected payments via UPI escrow are currently in development.")) },
+                        onDelivery = { activeBackStack.add(ComingSoonRoute("Delivery Tracking", "Integrated shipping and delivery tracking will be available soon.")) },
+                        onDispute = { activeBackStack.add(ComingSoonRoute("Disputes", "Post-trade dispute resolution is in development. Contact Support for immediate assistance.")) },
+                        onShareListing = { listingId, title ->
+                            val url = safetyRoutesViewModel.publicListingUrlBuilder.buildListingUrl(listingId)
+                            if (url != null) {
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, title)
+                                    putExtra(Intent.EXTRA_TEXT, "$title\n$url")
+                                }
+                                runCatching { context.startActivity(Intent.createChooser(shareIntent, "Share Listing")) }.onFailure {
+                                    Toast.makeText(context, "Cannot open sharing app.", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Cannot share: Public link unavailable.", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                     )
                 }
                 is SellerProfileRoute -> NavEntry(key) {
                     val viewModel: SellerProfileViewModel = hiltViewModel()
+                    val safetyRoutesViewModel: SafetyRoutesViewModel = hiltViewModel()
                     val state = viewModel.state.collectAsStateWithLifecycle().value
+                    val blockState = safetyRoutesViewModel.blockState.collectAsStateWithLifecycle().value
                     LaunchedEffect(key.sellerId) { viewModel.load(key.sellerId) }
                     SellerProfileScreen(
                         state = state,
-                        onBack = { backStack.removeLastOrNull() },
+                        onBack = { activeBackStack.removeLastOrNull() },
                         onRetry = viewModel::retry,
-                        onListing = { listingId -> backStack.add(ListingDetailRoute(listingId)) },
+                        onListing = { listingId -> activeBackStack.add(ListingDetailRoute(listingId)) },
+                        onReportUser = { userId -> activeBackStack.add(ReportRoute("user", userId)) },
+                        onBlockUser = { userId -> 
+                            safetyRoutesViewModel.dispatchBlockUser(
+                                originatingSession = communicationSessionOwner.currentSession(),
+                                originatingRoute = key,
+                                getLiveSession = { communicationSessionOwner.currentSession() },
+                                getLiveTopRoute = { activeBackStack.lastOrNull() },
+                                getLiveUserId = { liveSessionUserId },
+                                counterpartyId = userId,
+                                onSuccess = { activeBackStack.removeLastOrNull() }
+                            )
+                        },
+                        blockActionPending = blockState.pendingCounterpartyId == key.sellerId,
+                        blockActionError = blockState.error.takeIf { blockState.pendingCounterpartyId == null },
+                        onClearBlockError = safetyRoutesViewModel::clearMessages,
+                        onReviews = { activeBackStack.add(ComingSoonRoute("Seller Reviews", "Seller reviews and ratings will be available in a future update.")) },
+                        onFollow = { activeBackStack.add(ComingSoonRoute("Follow Seller", "Seller following and saved-search alerts will be available soon.")) },
+                        onVerification = { activeBackStack.add(ComingSoonRoute("Seller Verification", "Identity verification badges and trust scores are in development.")) },
                     )
                 }
                 FavouritesRoute -> NavEntry(key) {
@@ -422,13 +553,25 @@ fun FairSwapApp(
                     LaunchedEffect(favouriteSnapshot.userId, favouriteSnapshot.generation) { viewModel.sessionChanged() }
                     FavouritesScreen(
                         state = state,
-                        onBack = { backStack.removeLastOrNull() },
+                        onBack = { if (backStack.size > 1) backStack.removeLastOrNull() else currentTab = AppTab.HOME },
                         onRefresh = viewModel::refresh,
                         onLoadMore = viewModel::loadMore,
                         onClearUnavailable = viewModel::clearUnavailable,
-                        onBrowse = { backStack.clear(); backStack.add(DiscoveryRoute) },
-                        onListing = { id -> backStack.add(ListingDetailRoute(id)) },
-                        onAuth = { if (backStack.lastOrNull() != AuthRoute) backStack.add(AuthRoute) },
+                        onBrowse = { currentTab = AppTab.HOME },
+                        onListing = { id -> activeBackStack.add(ListingDetailRoute(id)) },
+                        onAuth = { if (youBackStack.lastOrNull() != AuthRoute) youBackStack.add(AuthRoute); currentTab = AppTab.YOU },
+                        mutatingIds = favouriteSnapshot.mutating,
+                        onRemoveFavourite = { id ->
+                            scope.launch {
+                                when (favouritesRepository.setFavourite(id, false)) {
+                                    FavouriteMutationResult.AuthRequired -> { favouriteError = null; if (youBackStack.lastOrNull() != AuthRoute) youBackStack.add(AuthRoute); currentTab = AppTab.YOU }
+                                    FavouriteMutationResult.PolicyReviewRequired -> { favouriteError = null; if (youBackStack.lastOrNull() != AuthRoute) youBackStack.add(AuthRoute); currentTab = AppTab.YOU }
+                                    is FavouriteMutationResult.Updated -> favouriteError = null
+                                    else -> favouriteError = "Unable to update saved favourite. Retry."
+                                }
+                            }
+                        },
+                        favouriteError = favouriteError,
                     )
                 }
                 MessagesRoute -> NavEntry(key) {
@@ -503,14 +646,14 @@ fun FairSwapApp(
                             topBar = {
                                 @OptIn(ExperimentalMaterial3Api::class)
                                 TopAppBar(
-                                    title = { Text("Notifications") },
-                                    navigationIcon = { TextButton(onClick = { backStack.removeLastOrNull() }) { Text("Back") } },
+                                    title = { Text(stringResource(id = com.fairswap.core.designsystem.R.string.notifications_title)) },
+                                    navigationIcon = { TextButton(onClick = { backStack.removeLastOrNull() }) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.action_back)) } },
                                 )
                             }
                         ) { paddingValues ->
                             Box(Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                                 if (liveSessionUserId == null) {
-                                    Text("Please sign in to view notifications.")
+                                    Text(stringResource(id = com.fairswap.core.designsystem.R.string.notifications_sign_in_required))
                                 } else {
                                     CircularProgressIndicator()
                                 }
@@ -597,8 +740,15 @@ fun FairSwapApp(
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }
+                SafetyCenterRoute -> NavEntry(key) {
+                    com.fairswap.feature.account.safety.SafetyCenterScreen(
+                        onBack = { activeBackStack.removeLastOrNull() }
+                    )
+                }
                 AuthRoute -> NavEntry(key) {
                     val authViewModel: AuthViewModel = hiltViewModel()
+                    val uriHandler = LocalUriHandler.current
+                    val context = LocalContext.current
                     val authState = authViewModel.uiState
                     val currentUser = when (val gate = authState.gate) {
                         is AuthGate.SignedIn -> gate.account.userId
@@ -648,10 +798,18 @@ fun FairSwapApp(
                             onFormChange = accountViewModel::updateForm,
                             onSave = accountViewModel::save,
                             onRetry = accountViewModel::refresh,
-                            onFavourites = { backStack.add(FavouritesRoute) },
-                            onMyListings = { backStack.add(MyListingsRoute) },
-                            onMessages = { backStack.add(MessagesRoute) },
-                            onNotifications = { backStack.add(NotificationsRoute) },
+                            onFavourites = { currentTab = AppTab.SAVED },
+                            onMyListings = { currentTab = AppTab.SELL },
+                            onMessages = { currentTab = AppTab.CHATS },
+                            onNotifications = { activeBackStack.add(NotificationsRoute) },
+                            onBlockedUsers = { activeBackStack.add(BlockedUsersRoute) },
+                            onPrivacyRequests = { activeBackStack.add(PrivacyRoute) },
+                            onSupport = { runCatching { uriHandler.openUri("https://help.fairswap.in/en") }.onFailure { Toast.makeText(context, "Cannot open browser.", Toast.LENGTH_SHORT).show() } },
+                            onSafety = { activeBackStack.add(SafetyCenterRoute) },
+                            onTerms = { runCatching { uriHandler.openUri("https://fairswap.in/terms") }.onFailure { Toast.makeText(context, "Cannot open browser.", Toast.LENGTH_SHORT).show() } },
+                            onPrivacyPolicy = { runCatching { uriHandler.openUri("https://fairswap.in/privacy") }.onFailure { Toast.makeText(context, "Cannot open browser.", Toast.LENGTH_SHORT).show() } },
+                            selectedLanguage = selectedLanguage,
+                            onLanguageSelected = onLanguageSelected,
                             onSignOut = authViewModel::signOut,
                         )
                     } else {
@@ -673,6 +831,11 @@ fun FairSwapApp(
                             onSetNewPassword = authViewModel::setNewPassword,
                             onReacceptPolicies = authViewModel::reacceptPolicies,
                             onSignOut = authViewModel::signOut,
+                            onTerms = { runCatching { uriHandler.openUri("https://fairswap.in/terms") }.onFailure { android.widget.Toast.makeText(context, "Cannot open browser.", android.widget.Toast.LENGTH_SHORT).show() } },
+                            onPrivacyPolicy = { runCatching { uriHandler.openUri("https://fairswap.in/privacy") }.onFailure { android.widget.Toast.makeText(context, "Cannot open browser.", android.widget.Toast.LENGTH_SHORT).show() } },
+                            onSupport = { runCatching { uriHandler.openUri("https://help.fairswap.in/en") }.onFailure { android.widget.Toast.makeText(context, "Cannot open browser.", android.widget.Toast.LENGTH_SHORT).show() } },
+                            selectedLanguage = selectedLanguage,
+                            onLanguageSelected = onLanguageSelected,
                         )
                     }
                 }
@@ -869,13 +1032,24 @@ fun FairSwapApp(
                         )
                     }
                 }
+                is ComingSoonRoute -> NavEntry(key) {
+                    FairSwapComingSoonScreen(
+                        title = key.featureTitle,
+                        description = key.featureDescription,
+                        statusLabel = "IN DEVELOPMENT",
+                        backLabel = "← Go Back",
+                        onBack = { activeBackStack.removeLastOrNull() }
+                    )
+                }
                 else -> NavEntry(key) { Box(Modifier.fillMaxSize()) }
             }
         }
     )
+        }
+    }
 }
 
-internal fun accountGateSessionMatches(gateUserId: String?, liveSessionUserId: String?): Boolean {
+fun accountGateSessionMatches(gateUserId: String?, liveSessionUserId: String?): Boolean {
     if (gateUserId == null || liveSessionUserId == null) return false
     return gateUserId == liveSessionUserId
 }

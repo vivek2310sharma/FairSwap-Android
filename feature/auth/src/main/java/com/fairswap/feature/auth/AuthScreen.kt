@@ -32,9 +32,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import com.fairswap.core.auth.AuthGate
+import androidx.compose.ui.res.stringResource
+import com.fairswap.core.designsystem.R
+import com.fairswap.core.designsystem.components.FairSwapWordmark
 import com.fairswap.core.auth.LegalPolicy
 import com.fairswap.core.auth.SignUpInput
+import com.fairswap.core.auth.AuthGate
 
 @Composable
 fun AuthScreen(
@@ -55,6 +58,11 @@ fun AuthScreen(
     onSetNewPassword: (String, String) -> Unit,
     onReacceptPolicies: () -> Unit,
     onSignOut: () -> Unit,
+    onTerms: () -> Unit = {},
+    onPrivacyPolicy: () -> Unit = {},
+    onSupport: () -> Unit = {},
+    selectedLanguage: String = "en",
+    onLanguageSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { paddingValues ->
@@ -66,10 +74,11 @@ fun AuthScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.Center,
         ) {
-            Text("FairSwap", style = MaterialTheme.typography.headlineMedium)
-            OutlinedButton(onClick = onBrowse) { Text("Browse marketplace") }
+            FairSwapWordmark()
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(onClick = onBrowse) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_browse_marketplace)) }
             Text(
-                "FairSwap account",
+                stringResource(id = com.fairswap.core.designsystem.R.string.auth_fairswap_account),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -78,48 +87,79 @@ fun AuthScreen(
             if (uiState.isInitializing) {
                 CircularProgressIndicator()
             } else when (val gate = uiState.gate) {
-                AuthGate.SignedOut -> when (uiState.mode) {
-                    AuthMode.SignIn -> when (uiState.signInStep) {
-                        SignInStep.Email -> SignInEmailForm(
+                AuthGate.SignedOut -> {
+                    when (uiState.mode) {
+                        AuthMode.SignIn -> when (uiState.signInStep) {
+                            SignInStep.Email -> SignInEmailForm(
+                                isLoading = uiState.isLoading,
+                                error = uiState.error,
+                                initialEmail = uiState.normalizedEmail,
+                                onSubmit = onSubmitEmail,
+                                onShowSignUp = onShowSignUp,
+                            )
+                            SignInStep.Password -> SignInPasswordForm(
+                                email = uiState.normalizedEmail,
+                                isLoading = uiState.isLoading,
+                                error = uiState.error,
+                                onChangeEmail = onChangeEmail,
+                                onSubmit = onSignIn,
+                                onSwitchToOtp = onSwitchToOtp,
+                                onShowForgotPassword = onShowForgotPassword,
+                            )
+                            SignInStep.Otp -> SignInOtpForm(
+                                email = uiState.normalizedEmail,
+                                isLoading = uiState.isLoading,
+                                error = uiState.error,
+                                otpAcknowledged = uiState.otpAcknowledged,
+                                resendAvailableAt = uiState.resendAvailableAt,
+                                onChangeEmail = onChangeEmail,
+                                onSubmit = onVerifyOtp,
+                                onResend = onRequestOtp,
+                                onSwitchToPassword = onSwitchToPassword,
+                            )
+                        }
+                        AuthMode.SignUp -> SignUpForm(
                             isLoading = uiState.isLoading,
                             error = uiState.error,
-                            initialEmail = uiState.normalizedEmail,
-                            onSubmit = onSubmitEmail,
-                            onShowSignUp = onShowSignUp,
+                            onSubmit = onSignUp,
+                            onShowSignIn = onShowSignIn,
                         )
-                        SignInStep.Password -> SignInPasswordForm(
-                            email = uiState.normalizedEmail,
+                        AuthMode.ForgotPassword -> ForgotPasswordForm(
                             isLoading = uiState.isLoading,
                             error = uiState.error,
-                            onChangeEmail = onChangeEmail,
-                            onSubmit = onSignIn,
-                            onSwitchToOtp = onSwitchToOtp,
-                            onShowForgotPassword = onShowForgotPassword,
-                        )
-                        SignInStep.Otp -> SignInOtpForm(
-                            email = uiState.normalizedEmail,
-                            isLoading = uiState.isLoading,
-                            error = uiState.error,
-                            otpAcknowledged = uiState.otpAcknowledged,
-                            resendAvailableAt = uiState.resendAvailableAt,
-                            onChangeEmail = onChangeEmail,
-                            onSubmit = onVerifyOtp,
-                            onResend = onRequestOtp,
-                            onSwitchToPassword = onSwitchToPassword,
+                            onSubmit = onRequestPasswordReset,
+                            onShowSignIn = onShowSignIn,
                         )
                     }
-                    AuthMode.SignUp -> SignUpForm(
-                        isLoading = uiState.isLoading,
-                        error = uiState.error,
-                        onSubmit = onSignUp,
-                        onShowSignIn = onShowSignIn,
-                    )
-                    AuthMode.ForgotPassword -> ForgotPasswordForm(
-                        isLoading = uiState.isLoading,
-                        error = uiState.error,
-                        onSubmit = onRequestPasswordReset,
-                        onShowSignIn = onShowSignIn,
-                    )
+
+                    Spacer(Modifier.height(32.dp))
+                    Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_language_picker), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            androidx.compose.material3.RadioButton(
+                                selected = selectedLanguage == "en",
+                                onClick = { onLanguageSelected("en") }
+                            )
+                            Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_english), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            androidx.compose.material3.RadioButton(
+                                selected = selectedLanguage == "hi",
+                                onClick = { onLanguageSelected("hi") }
+                            )
+                            Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_hindi), style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+
+                    Spacer(Modifier.height(32.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = onSupport) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_help_center)) }
+                        TextButton(onClick = onTerms) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_terms)) }
+                        TextButton(onClick = onPrivacyPolicy) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_privacy)) }
+                    }
                 }
                 AuthGate.ResetEmailSent -> ResetEmailSent(onShowSignIn)
                 AuthGate.RecoveryRequired -> SetNewPasswordForm(
@@ -154,7 +194,7 @@ fun AuthScreen(
                 )
             ) {
                 Spacer(Modifier.height(12.dp))
-                ErrorText(uiState.error!!)
+                ErrorText(uiState.error)
             }
 
             if (uiState.isLoading && !uiState.isInitializing) {
@@ -181,7 +221,7 @@ private fun SignInEmailForm(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_email_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -189,7 +229,7 @@ private fun SignInEmailForm(
             onClick = { onSubmit(email) },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Continue") }
+        ) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_continue)) }
         OutlinedButton(
             onClick = onShowSignUp,
             enabled = !isLoading,
@@ -221,7 +261,7 @@ private fun SignInPasswordForm(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_password_label)) },
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
@@ -233,7 +273,7 @@ private fun SignInPasswordForm(
             onClick = { onSubmit(email, password) },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Sign in") }
+        ) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_sign_in)) }
         OutlinedButton(
             onClick = onSwitchToOtp,
             enabled = !isLoading,
@@ -320,21 +360,21 @@ private fun ForgotPasswordForm(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_email_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
         Button(onClick = { onSubmit(email) }, enabled = !isLoading) { Text("Send reset link") }
-        OutlinedButton(onClick = onShowSignIn, enabled = !isLoading) { Text("Back to sign in") }
+        OutlinedButton(onClick = onShowSignIn, enabled = !isLoading) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_back_to_sign_in)) }
     }
 }
 
 @Composable
 private fun ResetEmailSent(onShowSignIn: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Check your email", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_check_email_title), style = MaterialTheme.typography.headlineSmall)
         Text("If an account exists for that address, a password reset link has been sent.")
-        Button(onClick = onShowSignIn) { Text("Back to sign in") }
+        Button(onClick = onShowSignIn) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_back_to_sign_in)) }
     }
 }
 
@@ -405,7 +445,7 @@ private fun SignUpForm(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_email_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -424,12 +464,12 @@ private fun SignUpForm(
         ConsentRow(
             checked = termsAccepted,
             onCheckedChange = { termsAccepted = it },
-            text = "I accept the Terms of Service and Acceptable Use Policy, and acknowledge the Privacy Policy.",
+            text = stringResource(id = com.fairswap.core.designsystem.R.string.auth_terms_accept),
         )
         ConsentRow(
             checked = ageConfirmed,
             onCheckedChange = { ageConfirmed = it },
-            text = "I confirm that I am at least ${LegalPolicy.MinimumAge} years old.",
+            text = stringResource(id = com.fairswap.core.designsystem.R.string.auth_age_accept, LegalPolicy.MinimumAge),
         )
 
         Button(
@@ -446,12 +486,12 @@ private fun SignUpForm(
             },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Sign up") }
+        ) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_sign_up)) }
         OutlinedButton(
             onClick = onShowSignIn,
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Back to sign in") }
+        ) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_back_to_sign_in)) }
     }
 }
 
@@ -474,9 +514,9 @@ private fun ConsentRow(
 @Composable
 private fun ConfirmationPending(email: String, onBackToSignIn: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Check your email", style = MaterialTheme.typography.headlineSmall)
-        Text("We sent a confirmation link to $email. Confirm your email before signing in.")
-        Button(onClick = onBackToSignIn) { Text("Back to sign in") }
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_check_email_title), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_check_email_desc, email))
+        Button(onClick = onBackToSignIn) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_back_to_sign_in)) }
     }
 }
 
@@ -492,33 +532,33 @@ private fun PolicyReview(
     var ageConfirmed by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Policy review required", style = MaterialTheme.typography.headlineSmall)
-        Text("Welcome back, $displayName. Review and accept the current Public Beta policies to continue.")
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_policy_review_title), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_policy_review_desc, displayName))
         error?.let { ErrorText(it) }
         ConsentRow(
             checked = termsAccepted,
             onCheckedChange = { termsAccepted = it },
-            text = "I accept the Terms of Service and Acceptable Use Policy, and acknowledge the Privacy Policy.",
+            text = stringResource(id = com.fairswap.core.designsystem.R.string.auth_terms_accept),
         )
         ConsentRow(
             checked = ageConfirmed,
             onCheckedChange = { ageConfirmed = it },
-            text = "I confirm that I am at least ${LegalPolicy.MinimumAge} years old.",
+            text = stringResource(id = com.fairswap.core.designsystem.R.string.auth_age_accept, LegalPolicy.MinimumAge),
         )
         Button(
             onClick = onAccept,
             enabled = termsAccepted && ageConfirmed && !isLoading,
-        ) { Text("Accept and continue") }
-        OutlinedButton(onClick = onSignOut, enabled = !isLoading) { Text("Sign out") }
+        ) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_accept_continue)) }
+        OutlinedButton(onClick = onSignOut, enabled = !isLoading) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.action_sign_out)) }
     }
 }
 
 @Composable
 private fun RestrictedAccount(status: String, onSignOut: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Account unavailable", style = MaterialTheme.typography.headlineSmall)
-        Text("Current account status: $status")
-        Button(onClick = onSignOut) { Text("Sign out") }
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_account_unavailable), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(id = com.fairswap.core.designsystem.R.string.auth_status, status))
+        Button(onClick = onSignOut) { Text(stringResource(id = com.fairswap.core.designsystem.R.string.action_sign_out)) }
     }
 }
 

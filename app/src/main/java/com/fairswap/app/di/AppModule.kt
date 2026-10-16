@@ -5,6 +5,10 @@ import com.fairswap.app.BuildConfig
 import com.fairswap.core.account.AccountGateway
 import com.fairswap.core.account.AccountRepository
 import com.fairswap.core.account.SupabaseAccountGateway
+import com.fairswap.core.account.UserSafetyGateway
+import com.fairswap.core.account.UserSafetyRepository
+import com.fairswap.core.account.SupabaseUserSafetyGateway
+import com.fairswap.core.account.WebRoutes
 import com.fairswap.core.auth.AuthCallbackConfig
 import com.fairswap.core.auth.AuthCallbackCoordinator
 import com.fairswap.core.auth.AuthRepository
@@ -19,6 +23,7 @@ import com.fairswap.core.discovery.PublicMarketplaceDataSource
 import com.fairswap.core.discovery.PublicMarketplaceGateway
 import com.fairswap.core.discovery.PublicMarketplaceRepository
 import com.fairswap.core.discovery.PublicMediaUrlBuilder
+import com.fairswap.core.discovery.PublicListingUrlBuilder
 import com.fairswap.core.discovery.SupabasePublicMarketplaceGateway
 import com.fairswap.core.favourites.FavouriteStateStore
 import com.fairswap.core.favourites.FavouritesGateway
@@ -53,7 +58,23 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideUserSafetyGateway(supabase: SupabaseClient): UserSafetyGateway = SupabaseUserSafetyGateway(supabase)
+
+    @Provides
+    @Singleton
+    fun provideUserSafetyRepository(gateway: UserSafetyGateway) = UserSafetyRepository(gateway)
+
+    @Provides
+    @Singleton
+    fun provideWebRoutes() = WebRoutes(BuildConfig.FAIRSWAP_WEB_BASE_URL)
+
+    @Provides
+    @Singleton
     fun providePublicMediaUrlBuilder() = PublicMediaUrlBuilder(BuildConfig.FAIRSWAP_WEB_BASE_URL)
+
+    @Provides
+    @Singleton
+    fun providePublicListingUrlBuilder() = PublicListingUrlBuilder(BuildConfig.FAIRSWAP_WEB_BASE_URL)
 
     @Provides
     @Singleton

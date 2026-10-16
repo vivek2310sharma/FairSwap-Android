@@ -1,6 +1,7 @@
 package com.fairswap.feature.communication
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,11 +27,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.fairswap.core.designsystem.R as DesignR
 import com.fairswap.core.communication.ChatMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +51,12 @@ fun ThreadScreen(
     onSend: () -> Unit,
     onLoadOlder: () -> Unit,
     onBack: () -> Unit,
+    onReportUser: (String) -> Unit = {},
+    onBlockUser: (String) -> Unit = {},
+    blockActionPending: Boolean = false,
+    blockActionError: String? = null,
+    blockActionSuccess: String? = null,
+    onClearBlockError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     LifecycleStartEffect(Unit) {
@@ -53,6 +67,8 @@ fun ThreadScreen(
     }
 
     val listState = rememberLazyListState()
+    var showBlockDialog by remember { mutableStateOf(false) }
+    var targetBlockUserId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.messages.size) {
         if (state.messages.isNotEmpty()) {
@@ -66,7 +82,7 @@ fun ThreadScreen(
                 title = {
                     Column {
                         Text(
-                            text = state.summary?.listingTitle ?: "Conversation",
+                            text = state.summary?.listingTitle ?: stringResource(id = DesignR.string.chats_title),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         state.summary?.counterpartyName?.let { name ->
@@ -79,8 +95,27 @@ fun ThreadScreen(
                     }
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back") }
+                    TextButton(onClick = onBack) { Text(stringResource(id = DesignR.string.action_back)) }
                 },
+                actions = {
+                    val counterpartyId = state.summary?.counterpartyId
+                    if (counterpartyId != null) {
+                        TextButton(onClick = { onReportUser(counterpartyId) }) { Text(stringResource(id = DesignR.string.listing_detail_report)) }
+                        TextButton(
+                            onClick = { 
+                                targetBlockUserId = counterpartyId
+                                showBlockDialog = true 
+                            },
+                            enabled = !blockActionPending
+                        ) { 
+                            if (blockActionPending) {
+                                CircularProgressIndicator(modifier = Modifier.width(16.dp).height(16.dp))
+                            } else {
+                                Text(stringResource(id = DesignR.string.seller_profile_block_confirm)) 
+                            }
+                        }
+                    }
+                }
             )
         },
         modifier = modifier,
@@ -90,6 +125,25 @@ fun ThreadScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            blockActionError?.let { err ->
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = err,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onClearBlockError) { Text("Dismiss") }
+                    }
+                }
+            }
             state.messagingUnavailableError?.let { err ->
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -175,7 +229,7 @@ fun ThreadScreen(
                         OutlinedTextField(
                             value = state.composerText,
                             onValueChange = { if (it.length <= 2000) onComposerTextChanged(it) },
-                            placeholder = { Text("Type a message...") },
+                            placeholder = { Text(stringResource(id = DesignR.string.chats_type_message)) },
                             enabled = !state.isSending && state.messagingUnavailableError == null,
                             modifier = Modifier.weight(1f),
                         )
@@ -201,6 +255,37 @@ fun ThreadScreen(
                 }
             }
         }
+    }
+
+    if (showBlockDialog && targetBlockUserId != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showBlockDialog = false
+                targetBlockUserId = null
+            },
+            title = { Text("Block User?") },
+            text = { Text("They will no longer be able to send you messages or start new inquiries. You can unblock them anytime in Blocked Users.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val userId = targetBlockUserId
+                    showBlockDialog = false
+                    targetBlockUserId = null
+                    if (userId != null) {
+                        onBlockUser(userId)
+                    }
+                }) {
+                    Text(stringResource(id = DesignR.string.seller_profile_block_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showBlockDialog = false
+                    targetBlockUserId = null
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

@@ -20,6 +20,8 @@ android {
 dependencies {
     implementation(project(":core:sellerlistings"))
     implementation(project(":core:discovery"))
+    implementation(project(":core:designsystem"))
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil.compose)

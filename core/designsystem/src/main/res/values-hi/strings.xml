@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common Actions -->
+    <string name="action_back">वापस</string>
+    <string name="action_retry">पुनः प्रयास करें</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="action_save">सेव करें</string>
+    <string name="action_edit">संपादित करें</string>
+    <string name="action_refresh">रीफ्रेश</string>
+    <string name="action_sign_out">साइन आउट</string>
+
+    <!-- Account Screen -->
+    <string name="account_title">मेरा खाता</string>
+    <string name="account_public_profile">सार्वजनिक प्रोफ़ाइल</string>
+    <string name="account_name">नाम: %s</string>
+    <string name="account_location">स्थान: %s</string>
+    <string name="account_bio">परिचय: %s</string>
+    <string name="account_not_set">सेट नहीं है</string>
+    <string name="account_no_bio">अभी तक कोई परिचय नहीं।</string>
+    <string name="account_edit_public_profile">सार्वजनिक प्रोफ़ाइल संपादित करें</string>
+    
+    <string name="account_security_status">सुरक्षा और स्थिति</string>
+    <string name="account_email">ईमेल: %s</string>
+    <string name="account_status">स्थिति: %s</string>
+    <string name="account_terms_version">शर्तें संस्करण: %s</string>
+
+    <string name="account_lang_region">भाषा और क्षेत्र</string>
+    <string name="account_lang_desc">अपनी पसंदीदा प्रदर्शन भाषा चुनें:</string>
+
+    <string name="account_my_listings">मेरे विज्ञापन</string>
+    <string name="account_my_listings_desc">मार्केटप्लेस आइटम और फ़ोटो प्रबंधित करें</string>
+    <string name="account_view_listings">विज्ञापन देखें →</string>
+
+    <string name="account_messages">संदेश</string>
+    <string name="account_messages_desc">खरीदार और विक्रेता चैट</string>
+    <string name="account_view_inbox">इनबॉक्स देखें →</string>
+
+    <string name="account_notifications">नोटिफिकेशन्स</string>
+    <string name="account_notifications_desc">गतिविधि और अलर्ट</string>
+    <string name="account_notification_center">नोटिफिकेशन सेंटर →</string>
+
+    <string name="account_saved_favourites">सेव किए गए विज्ञापन</string>
+    <string name="account_view_favourites">सेव किए गए विज्ञापन देखें →</string>
+
+    <string name="account_privacy_safety">गोपनीयता और सुरक्षा</string>
+    <string name="account_blocked_users">ब्लॉक किए गए उपयोगकर्ता</string>
+    <string name="account_privacy_requests">गोपनीयता अनुरोध</string>
+    <string name="account_support">सहायता</string>
+    <string name="account_safety_center">सुरक्षा केंद्र</string>
+    <string name="account_terms">सेवा की शर्तें</string>
+    <string name="account_privacy_policy">गोपनीयता नीति</string>
+
+    <!-- Safety Center -->
+    <string name="safety_center_title">सुरक्षा केंद्र</string>
+    <string name="safety_tips_title">🛡️ सुरक्षित व्यापार सुझाव</string>
+    <string name="safety_tips_desc">FairSwap पर सुरक्षित और सफल लेनदेन सुनिश्चित करने के लिए इन दिशानिर्देशों का पालन करें।</string>
+    <string name="safety_upi_title">1. अपना UPI और बैंक विवरण सुरक्षित रखें</string>
+    <string name="safety_upi_desc">पैसे प्राप्त करने के लिए कभी भी अपना UPI पिन दर्ज न करें। स्कैमर्स आपको पैसे भेजने का दावा करते हुए QR कोड या भुगतान लिंक भेज सकते हैं। आपको केवल पैसे भेजने के लिए पिन की आवश्यकता होती है, प्राप्त करने के लिए नहीं।</string>
+    <string name="safety_advance_title">2. अग्रिम भुगतान और शुल्क से सावधान रहें</string>
+    <string name="safety_advance_desc">जिन वस्तुओं को आपने नहीं देखा है, उनके लिए अग्रिम शुल्क का भुगतान न करें। बुकिंग राशि, नकली कूरियर शुल्क या अग्रिम शिपिंग शुल्क मांगने वाले विक्रेताओं से सावधान रहें।</string>
+    <string name="safety_meet_title">3. सुरक्षित रूप से मिलें</string>
+    <string name="safety_meet_desc">हमेशा सुरक्षित, रोशनी वाले और सार्वजनिक स्थान पर मिलने की व्यवस्था करें। हो सके तो किसी दोस्त को साथ लाएं। कोई भी भुगतान करने से पहले वस्तु का अच्छी तरह निरीक्षण करें।</string>
+    <string name="safety_impersonation_title">4. प्रतिरूपण से सावधान रहें</string>
+    <string name="safety_impersonation_desc">स्कैमर्स झूठा विश्वास बनाने के लिए सशस्त्र बलों के कर्मियों या अधिकारियों का प्रतिरूपण कर सकते हैं। हमेशा वस्तु को व्यक्तिगत रूप से सत्यापित करें, चाहे विक्रेता की दावा की गई पहचान कुछ भी हो।</string>
+    <string name="safety_fraud_title">धोखाधड़ी की रिपोर्ट करना</string>
+    <string name="safety_fraud_desc">यदि आपको FairSwap पर कोई संदिग्ध विज्ञापन या उपयोगकर्ता मिलता है, तो विज्ञापन या उनकी प्रोफ़ाइल पर \'रिपोर्ट\' बटन का उपयोग करें। यदि आप भारत में साइबर धोखाधड़ी के शिकार हुए हैं, तो तुरंत राष्ट्रीय साइबर अपराध रिपोर्टिंग पोर्टल या 1930 हेल्पलाइन पर संपर्क करें।</string>
+
+    <string name="action_report_cybercrime">साइबर अपराध की रिपोर्ट करें</string>
+    <string name="action_call_1930">1930 पर कॉल करें</string>
+    <string name="action_help_center">सहायता केंद्र</string>
+    <string name="error_cannot_open_browser">ब्राउज़र नहीं खुल सका।</string>
+    <string name="error_cannot_open_dialer">डायलर नहीं खुल सका।</string>
+
+    <!-- Auth / Guest -->
+    <string name="auth_language_picker">भाषा / Language</string>
+    <string name="auth_english">English</string>
+    <string name="auth_hindi">हिन्दी</string>
+    <string name="auth_help_center">सहायता केंद्र</string>
+    <string name="auth_terms">शर्तें</string>
+    <string name="auth_privacy">गोपनीयता</string>
+    <string name="auth_sign_in">साइन इन करें</string>
+    <string name="auth_sign_up">साइन अप करें</string>
+    <string name="auth_check_email_title">अपना ईमेल जांचें</string>
+    <string name="auth_check_email_desc">हमने %s पर एक पुष्टिकरण लिंक भेजा है। साइन इन करने से पहले अपना ईमेल सत्यापित करें।</string>
+    <string name="auth_policy_review_title">नीति समीक्षा आवश्यक</string>
+    <string name="auth_policy_review_desc">वापसी पर स्वागत है, %s। जारी रखने के लिए वर्तमान सार्वजनिक बीटा नीतियों की समीक्षा करें और स्वीकार करें।</string>
+    <string name="auth_terms_accept">मैं सेवा की शर्तों और स्वीकार्य उपयोग नीति को स्वीकार करता हूं, और गोपनीयता नीति को स्वीकार करता हूं।</string>
+    <string name="auth_age_accept">मैं पुष्टि करता हूं कि मेरी आयु कम से कम %d वर्ष है।</string>
+    <string name="auth_accept_continue">स्वीकार करें और जारी रखें</string>
+    <string name="auth_account_unavailable">खाता अनुपलब्ध</string>
+    <string name="auth_status">वर्तमान खाता स्थिति: %s</string>
+    <string name="auth_back_to_sign_in">साइन इन पर वापस जाएं</string>
+    <string name="auth_email_label">ईमेल</string>
+    <string name="auth_password_label">पासवर्ड</string>
+    <string name="auth_continue">जारी रखें</string>
+
+    <!-- Listing Detail -->
+    <string name="listing_detail_negotiable">मोलभाव संभव</string>
+    <string name="listing_detail_condition_category">स्थिति: %1$s · श्रेणी: %2$s</string>
+    <string name="listing_detail_posted_on">%s को पोस्ट किया गया</string>
+    <string name="listing_detail_description">विवरण</string>
+    <string name="listing_detail_specifications">विशेष विवरण</string>
+    <string name="listing_detail_seller_details">विक्रेता विवरण</string>
+    <string name="listing_detail_member_since">%s से सदस्य</string>
+    <string name="listing_detail_seller_profile">विक्रेता प्रोफ़ाइल</string>
+    <string name="listing_detail_message_seller">विक्रेता को संदेश भेजें</string>
+    <string name="listing_detail_report">रिपोर्ट करें</string>
+    <string name="listing_detail_share">साझा करें</string>
+    <string name="listing_detail_you_own">ℹ️ यह विज्ञापन आपका है</string>
+    <string name="listing_detail_no_photo">कोई फ़ोटो नहीं</string>
+    <string name="listing_detail_unavailable_title">विज्ञापन अनुपलब्ध</string>
+    <string name="listing_detail_unavailable_desc">यह आइटम शायद बिक गया है, हटा दिया गया है, या अब सक्रिय नहीं है।</string>
+    <string name="listing_detail_planned_features">भविष्य की सुविधाएं</string>
+    <string name="listing_detail_planned_desc">हम आपके लिए सुरक्षित भुगतान और डिलीवरी लाने पर काम कर रहे हैं।</string>
+
+    <!-- Favourites -->
+    <string name="favourites_title">सेव किए गए विज्ञापन</string>
+    <string name="favourites_showing_stale">आपके पिछले सफल लोड से सहेजे गए परिणाम दिखा रहे हैं।</string>
+    <string name="favourites_sign_in_title">विज्ञापन सिंक करने के लिए साइन इन करें</string>
+    <string name="favourites_sign_in_desc">जब आप साइन इन होते हैं तो सहेजे गए आइटम डिवाइसों में सिंक हो जाते हैं।</string>
+    <string name="favourites_sign_in_button">साइन इन / नया खाता बनाएँ</string>
+    <string name="favourites_review_policies">सेव किए गए विज्ञापनों को बदलने से पहले वर्तमान नीतियों की समीक्षा करें।</string>
+    <string name="favourites_review_button">नीतियों की समीक्षा करें</string>
+    <string name="favourites_unavailable_count">%d सेव किए गए आइटम अब उपलब्ध नहीं हैं।</string>
+    <string name="favourites_clear_unavailable">अनुपलब्ध हटाएं</string>
+    <string name="favourites_no_saved_title">♡ अभी तक कोई विज्ञापन सेव नहीं किया गया</string>
+    <string name="favourites_no_saved_desc">किसी भी विज्ञापन को यहां तुरंत एक्सेस करने के लिए उस पर बने दिल के आइकन पर टैप करें।</string>
+    <string name="favourites_browse">मार्केटप्लेस विज्ञापन ब्राउज़ करें</string>
+    <string name="favourites_load_more">और लोड करें</string>
+    <string name="favourites_end">सेव किए गए विज्ञापनों का अंत</string>
+
+    <!-- My Listings -->
+    <string name="my_listings_title">मेरे विज्ञापन</string>
+    <string name="my_listings_create">विज्ञापन बनाएँ</string>
+    <string name="my_listings_no_listings">कोई विज्ञापन नहीं मिला।</string>
+    <string name="my_listings_no_listings_desc">FairSwap पर आइटम बेचने के लिए अपना पहला ड्राफ्ट विज्ञापन बनाएँ।</string>
+    <string name="my_listings_unfinished_draft">📝 अधूरा ड्राफ्ट</string>
+    <string name="my_listings_untitled">बिना शीर्षक का विज्ञापन</string>
+    <string name="my_listings_continue">जारी रखें</string>
+    <string name="my_listings_no_status_listings">कोई %s विज्ञापन नहीं।</string>
+    <string name="my_listings_no_status_desc">इस स्थिति में आपका कोई विज्ञापन नहीं है।</string>
+    <string name="my_listings_revision">संशोधन #%1$d • नवीनीकरण: %2$d/3</string>
+    <string name="my_listings_rejection_reason">अस्वीकृति का कारण:</string>
+    <string name="my_listings_removal_reason">मॉडरेशन हटाने का कारण:</string>
+    <string name="my_listings_photo_required">समीक्षा के लिए सबमिट करने हेतु कम से कम एक तैयार फ़ोटो आवश्यक है।</string>
+
+    <!-- Seller Profile -->
+    <string name="seller_profile_unavailable">विक्रेता अनुपलब्ध</string>
+    <string name="seller_profile_dismiss">खारिज करें</string>
+    <string name="seller_profile_report_user">उपयोगकर्ता की रिपोर्ट करें</string>
+    <string name="seller_profile_block_user">उपयोगकर्ता को ब्लॉक करें</string>
+    <string name="seller_profile_blocking">ब्लॉक किया जा रहा है...</string>
+    <string name="seller_profile_listings_shown">%d सार्वजनिक विज्ञापन दिखाए गए</string>
+    <string name="seller_profile_block_dialog_title">उपयोगकर्ता को ब्लॉक करें?</string>
+    <string name="seller_profile_block_dialog_desc">वे आपको संदेश नहीं भेज पाएंगे या नई पूछताछ शुरू नहीं कर पाएंगे। आप उन्हें ब्लॉक किए गए उपयोगकर्ताओं में किसी भी समय अनब्लॉक कर सकते हैं।</string>
+    <string name="seller_profile_block_confirm">ब्लॉक करें</string>
+
+    <!-- Chats -->
+    <string name="chats_title">संदेश</string>
+    <string name="chats_no_messages">अभी तक कोई संदेश नहीं।</string>
+    <string name="chats_type_message">एक संदेश टाइप करें...</string>
+    <string name="chats_send">भेजें</string>
+
+    <string name="safety_advice_buyers">🛡️ खरीदारों के लिए सुरक्षा सलाह</string>
+    <string name="safety_advice_1">• दिन के उजाले में सुरक्षित सार्वजनिक स्थान पर मिलें।</string>
+    <string name="safety_advice_2">• भुगतान पूरा करने से पहले आइटम का अच्छी तरह निरीक्षण करें।</string>
+    <string name="safety_advice_3">• पैसे प्राप्त करने के लिए कभी भी अपना UPI पिन दर्ज न करें।</string>
+    <string name="safety_advice_4">• अग्रिम शिपिंग शुल्क या असत्यापित भुगतान लिंक से बचें।</string>
+    <string name="safety_advice_5">• साइबर अपराध/धोखाधड़ी की रिपोर्ट 1930 पर करें।</string>
+    <string name="auth_browse_marketplace">मार्केटप्लेस ब्राउज़ करें</string>
+    <string name="auth_fairswap_account">FairSwap खाता</string>
+    <string name="notifications_title">नोटिफिकेशन्स</string>
+    <string name="notifications_mark_all_read">सभी पढ़े हुए चिह्नित करें</string>
+    <string name="notifications_empty">अभी तक कोई नोटिफिकेशन नहीं।</string>
+    <string name="planned_feature_make_offer">प्रस्ताव रखें</string>
+    <string name="planned_feature_buy_now">अभी खरीदें</string>
+    <string name="planned_feature_delivery">डिलीवरी</string>
+    <string name="planned_feature_disputes">विवाद</string>
+    <string name="notifications_sign_in_required">नोटिफिकेशन देखने के लिए साइन इन करें।</string>
+    <string name="nav_home">होम</string>
+    <string name="nav_saved">सेव किए गए</string>
+    <string name="nav_sell">बेचें</string>
+    <string name="nav_chats">चैट्स</string>
+    <string name="nav_you">आप</string>
+</resources>

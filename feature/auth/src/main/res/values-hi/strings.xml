@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Auth Screen -->
+    <string name="auth_browse_marketplace">मार्केटप्लेस ब्राउज़ करें</string>
+    <string name="auth_fairswap_account">FairSwap खाता</string>
+</resources>

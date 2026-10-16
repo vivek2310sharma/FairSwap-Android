@@ -102,6 +102,22 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        if (variant.flavorName == "staging") {
+            val key = configValue("SUPABASE_STAGING_PUBLISHABLE_KEY")
+            val url = configValue("SUPABASE_STAGING_URL").ifBlank { "https://wpppxlnbzqynvhpeuavd.supabase.co" }
+            check(key.isNotBlank()) {
+                "Build error: SUPABASE_STAGING_PUBLISHABLE_KEY is required for staging builds. " +
+                "Provide it in local.properties or via SUPABASE_STAGING_PUBLISHABLE_KEY environment variable."
+            }
+            check(url.startsWith("https://")) {
+                "Build error: SUPABASE_STAGING_URL must be a valid HTTPS URL for staging builds."
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:designsystem"))
@@ -124,6 +140,7 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
 
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -134,6 +151,8 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
+
 
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
@@ -143,6 +162,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(project(":core:sellerlistings"))
     testImplementation(project(":feature:sellerlistings"))
     testImplementation(project(":core:communication"))

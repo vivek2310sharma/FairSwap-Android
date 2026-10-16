@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Safety Center -->
+    <string name="safety_center_title">Safety Center</string>
+    <string name="safety_tips_title">🛡️ Safe Trading Tips</string>
+    <string name="safety_tips_desc">Follow these guidelines to ensure a safe and successful transaction on FairSwap.</string>
+    <string name="safety_upi_title">1. Protect Your UPI &amp; Bank Details</string>
+    <string name="safety_upi_desc">NEVER enter your UPI PIN to receive money. Scammers may send QR codes or payment links claiming they are sending you money. You only need a PIN to send money, not to receive it.</string>
+    <string name="safety_advance_title">2. Beware of Advance Payments &amp; Fees</string>
+    <string name="safety_advance_desc">Do not pay advance fees for items you haven\'t seen. Be wary of sellers asking for booking amounts, fake courier charges, or shipping fees upfront.</string>
+    <string name="safety_meet_title">3. Meet Safely</string>
+    <string name="safety_meet_desc">Always arrange to meet in a safe, well-lit, and public place. If possible, bring a friend. Inspect the item thoroughly before completing any payment.</string>
+    <string name="safety_impersonation_title">4. Beware of Impersonation</string>
+    <string name="safety_impersonation_desc">Scammers may impersonate armed forces personnel or officials to build false trust. Always verify the item in person, regardless of the seller\'s claimed identity.</string>
+    <string name="safety_fraud_title">Reporting Fraud</string>
+    <string name="safety_fraud_desc">If you encounter a suspicious listing or user on FairSwap, use the \'Report\' button on the listing or their profile. If you have been a victim of cyber fraud in India, immediately contact the National Cyber Crime Reporting Portal or helpline at 1930.</string>
+    
+    <string name="action_report_cybercrime">Report Cybercrime</string>
+    <string name="action_call_1930">Call 1930</string>
+    <string name="action_help_center">Help Center</string>
+    <string name="error_cannot_open_browser">Cannot open browser.</string>
+    <string name="error_cannot_open_dialer">Cannot open dialer.</string>
+</resources>

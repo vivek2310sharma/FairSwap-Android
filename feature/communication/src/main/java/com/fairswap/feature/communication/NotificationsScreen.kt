@@ -27,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.fairswap.core.designsystem.R as DesignR
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.fairswap.core.communication.InAppNotification
 
@@ -52,13 +54,13 @@ fun NotificationsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notifications") },
+                title = { Text(stringResource(id = DesignR.string.notifications_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back") }
+                    TextButton(onClick = onBack) { Text(stringResource(id = DesignR.string.action_back)) }
                 },
                 actions = {
                     if (!state.isLoading) {
-                        TextButton(onClick = onRefresh) { Text("Refresh") }
+                        TextButton(onClick = onRefresh) { Text(stringResource(id = DesignR.string.action_refresh)) }
                     }
                     if (state.hasUnread) {
                         if (state.isMarkingAllRead) {
@@ -70,7 +72,7 @@ fun NotificationsScreen(
                             )
                         } else {
                             TextButton(onClick = onMarkAllRead) {
-                                Text("Mark all read")
+                                Text(stringResource(id = DesignR.string.notifications_mark_all_read))
                             }
                         }
                     }
@@ -99,7 +101,7 @@ fun NotificationsScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = onRefresh) {
-                        Text("Retry")
+                        Text(stringResource(id = DesignR.string.action_retry))
                     }
                 }
             }
@@ -117,7 +119,7 @@ fun NotificationsScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No notifications yet.",
+                        text = stringResource(id = DesignR.string.notifications_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
