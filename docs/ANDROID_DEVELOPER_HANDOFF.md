@@ -13,7 +13,7 @@
   - Features include: Bottom Navigation, Home Discovery feed (with categories & text search), Favourites, Listing Details, Profile Dashboard, Sell/My Listings form skeleton, Chats inbox, and localized Hindi/English switching.
 - **Release Validation (ANDROID-RV-01):**
   - **RV-01A to RV-01G:** Read-only tests completed. 
-  - Validated staging emulator startup, guest journey search queries, full text Hindi localization propagation across all compose screens (via `LocaleHelper`), and 100% unit-test pass rate (28 total tests).
+  - Validated staging emulator startup, partially validated guest journey search queries (guest validation was incomplete due to active session), full text Hindi localization propagation across all compose screens (via `LocaleHelper`), and 100% unit-test pass rate (28 total tests).
   - *Known Limitations:* Some non-core features (payments, disputes, advanced messaging) display "In Development" placeholders to strictly adhere to Web brand parity milestones.
 
 ## 3. Latest Test & Build Results
