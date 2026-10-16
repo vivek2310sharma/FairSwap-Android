@@ -9,16 +9,17 @@ The FairSwap Android application development has been paused by the owner and th
 
 ## GitHub Repository State
 - **Target Branch:** `main`
-- **Handoff Pull Request:** #15 (Merged into `main`)
-- **Final `main` Commit SHA:** `f5ff324b9c21cb701321c1b00278d4f5a5bf967e`
+- **Handoff Pull Request:** #15 (Merged into `main`), PR #16 (OPEN, pending CI & Review)
+- **PR #15 Merge Commit SHA:** `f5ff324b9c21cb701321c1b00278d4f5a5bf967e`
+- **Final `main` Commit SHA (Post-Handoff Cleanup):** `8b57c79a91404d5031221d14a093c95d5eb32b64`
 - **Superseded PRs:** PR #13 (Android: messaging and in-app notifications) was superseded and closed.
 
 ## Completed Tasks
 1. **Source Synchronization:** All Experience v2 components (Native Kotlin, Jetpack Compose, Navigation 3, Hilt, Supabase Kotlin) have been pushed to `main`.
-2. **Release Validation Phase 1:** Validated guest discovery, bottom navigation, and full-app Hindi localization capability (RV-01A through RV-01G).
+2. **Release Validation Phase 1:** Partially validated guest discovery (due to active session), bottom navigation, and full-app Hindi localization capability (RV-01A through RV-01G).
 3. **Documentation Updated:** `README.md`, `ARCHITECTURE.md`, `PARITY_MATRIX.md`, and `ANDROID_DEVELOPER_HANDOFF.md` updated to accurately reflect the framework stack, module boundaries, and implemented vs. placeholder features.
 4. **Privacy & Security Audit:** Scrubbed historical release validation reports (`ANDROID_RV_01A_VALIDATION.md` etc.) to redact personal account credentials and email addresses. Keystore / `local.properties` exclusions successfully verified.
-5. **CI Automation:** Modified `.github/workflows/android-ci.yml` to gracefully provide necessary staging publishable keys so that standard verification checks (`assembleStagingDebug test lint`) pass in the cloud environment.
+5. **CI Automation:** Modified `.github/workflows/android-ci.yml` to strictly require the `SUPABASE_STAGING_PUBLISHABLE_KEY` from GitHub Actions Secrets (no dummy fallback) so that standard verification checks (`assembleStagingDebug test lint`) pass in the cloud environment.
 
 ## Pending Blockers
 - **Release Validation 02A (RV-02A):** Blocked because a dedicated, non-personal staging test account was unavailable. Creating a synthetic test listing, buyer-seller messaging, and user reporting remain unverified.
@@ -38,5 +39,8 @@ When you clone `main`, compile `com.fairswap.app.staging` to build the app targe
 
 ## Repository Cleanup Details
 - **Deleted Branches:** Cleaned up 6 obsolete remote branches (`feat/android-account-profile`, `feat/android-favourites`, `feat/android-listing-detail`, `feat/android-messaging-notifications`, `feat/android-public-discovery`, `feat/android-web-brand-parity`) that were already fully merged into `main`.
-- **Open Pull Requests:** 0 open pull requests remaining.
-- **Active Remote Branches:** `main` only.
+- **Open Pull Requests:** 1 open pull request (PR #16) as of Oct 16, 2026.
+- **Active Remote Branches:** `main` and `chore/handoff-corrections` (as of Oct 16, 2026).
+
+## Note on Historical Privacy Exposure
+A personal email address and name were previously detected and committed in `docs/ANDROID_RV_01A_VALIDATION.md`. While the HEAD of the repository has been sanitized, these details remain visible in the Git history. No history rewriting was performed per CTO directives.
