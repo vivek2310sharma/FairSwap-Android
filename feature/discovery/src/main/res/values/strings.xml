@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="discovery_title">FairSwap</string>
+    <string name="discovery_search_hint">Search listings nearby…</string>
+    <string name="discovery_search_button">Search</string>
+
+    <string name="discovery_recent_searches">Recent Searches</string>
+    <string name="discovery_clear">Clear</string>
+    <string name="discovery_categories">Categories</string>
+    <string name="discovery_all">All</string>
+    <string name="discovery_city">City</string>
+    <string name="discovery_locality">Locality</string>
+    <string name="discovery_condition">Condition</string>
+    <string name="discovery_sort">Sort</string>
+    <string name="discovery_min_price">Min ₹</string>
+    <string name="discovery_max_price">Max ₹</string>
+    <string name="discovery_apply_filters">Apply Filters</string>
+    <string name="discovery_hide_filters">Hide Filters ▲</string>
+    <string name="discovery_show_filters">Filters ▼</string>
+    <string name="discovery_refresh">Refresh</string>
+    <string name="discovery_retry_metadata">Retry metadata</string>
+    <string name="discovery_results_found">%d listings found</string>
+    <string name="discovery_results_stale"> · Showing previous results</string>
+    <string name="discovery_retry">Retry</string>
+    <string name="discovery_no_listings">No listings match your search.</string>
+    <string name="discovery_no_listings_hint">Try searching with different keywords, or clear filters.</string>
+    <string name="discovery_clear_all_filters">Clear All Filters</string>
+    <string name="discovery_load_more">Load more listings</string>
+    <string name="discovery_safety_tip_title">🛡️ Safe Trading Tip</string>
+    <string name="discovery_safety_tip_1">• Meet in a safe, public place in daylight.</string>
+    <string name="discovery_safety_tip_2">• Inspect the item thoroughly before completing payment.</string>
+    <string name="discovery_safety_tip_3">• NEVER enter your UPI PIN to receive money.</string>
+    <string name="discovery_safety_tip_4">• Avoid advance shipping fees or unverified payment links.</string>
+    <string name="discovery_safety_tip_5">• Report cybercrime / fraud to 1930.</string>
+</resources>

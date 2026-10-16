@@ -18,7 +18,9 @@ android {
 
 dependencies {
     implementation(project(":core:discovery"))
+    implementation(project(":core:designsystem"))
     implementation(project(":core:favourites"))
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)

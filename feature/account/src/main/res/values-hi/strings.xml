@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Safety Center -->
+    <string name="safety_center_title">सुरक्षा केंद्र</string>
+    <string name="safety_tips_title">🛡️ सुरक्षित व्यापार सुझाव</string>
+    <string name="safety_tips_desc">FairSwap पर सुरक्षित और सफल लेनदेन सुनिश्चित करने के लिए इन दिशानिर्देशों का पालन करें।</string>
+    <string name="safety_upi_title">1. अपना UPI और बैंक विवरण सुरक्षित रखें</string>
+    <string name="safety_upi_desc">पैसे प्राप्त करने के लिए कभी भी अपना UPI पिन दर्ज न करें। स्कैमर्स आपको पैसे भेजने का दावा करते हुए QR कोड या भुगतान लिंक भेज सकते हैं। आपको केवल पैसे भेजने के लिए पिन की आवश्यकता होती है, प्राप्त करने के लिए नहीं।</string>
+    <string name="safety_advance_title">2. अग्रिम भुगतान और शुल्क से सावधान रहें</string>
+    <string name="safety_advance_desc">जिन वस्तुओं को आपने नहीं देखा है, उनके लिए अग्रिम शुल्क का भुगतान न करें। बुकिंग राशि, नकली कूरियर शुल्क या अग्रिम शिपिंग शुल्क मांगने वाले विक्रेताओं से सावधान रहें।</string>
+    <string name="safety_meet_title">3. सुरक्षित रूप से मिलें</string>
+    <string name="safety_meet_desc">हमेशा सुरक्षित, रोशनी वाले और सार्वजनिक स्थान पर मिलने की व्यवस्था करें। हो सके तो किसी दोस्त को साथ लाएं। कोई भी भुगतान करने से पहले वस्तु का अच्छी तरह निरीक्षण करें।</string>
+    <string name="safety_impersonation_title">4. प्रतिरूपण से सावधान रहें</string>
+    <string name="safety_impersonation_desc">स्कैमर्स झूठा विश्वास बनाने के लिए सशस्त्र बलों के कर्मियों या अधिकारियों का प्रतिरूपण कर सकते हैं। हमेशा वस्तु को व्यक्तिगत रूप से सत्यापित करें, चाहे विक्रेता की दावा की गई पहचान कुछ भी हो।</string>
+    <string name="safety_fraud_title">धोखाधड़ी की रिपोर्ट करना</string>
+    <string name="safety_fraud_desc">यदि आपको FairSwap पर कोई संदिग्ध विज्ञापन या उपयोगकर्ता मिलता है, तो विज्ञापन या उनकी प्रोफ़ाइल पर \'रिपोर्ट\' बटन का उपयोग करें। यदि आप भारत में साइबर धोखाधड़ी के शिकार हुए हैं, तो तुरंत राष्ट्रीय साइबर अपराध रिपोर्टिंग पोर्टल या 1930 हेल्पलाइन पर संपर्क करें।</string>
+    
+    <string name="action_report_cybercrime">साइबर अपराध की रिपोर्ट करें</string>
+    <string name="action_call_1930">1930 पर कॉल करें</string>
+    <string name="action_help_center">सहायता केंद्र</string>
+    <string name="error_cannot_open_browser">ब्राउज़र नहीं खुल सका।</string>
+    <string name="error_cannot_open_dialer">डायलर नहीं खुल सका।</string>
+</resources>

@@ -29,4 +29,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Verify foundation
+        env:
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY || 'dummy_key_for_ci' }}
         run: ./gradlew :app:assembleStagingDebug test lint --stacktrace

@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FairSwap</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_saved">Saved</string>
+    <string name="tab_sell">Sell</string>
+    <string name="tab_chats">Chats</string>
+    <string name="tab_you">You</string>
+    <string name="search_hint">Search listings nearby&#8230;</string>
+    <string name="tagline">GIVE • GET • GROW TOGETHER</string>
+    <string name="safety_tip_title">🛡️ Safe Trading Tip</string>
+    <string name="safety_tip_body">Meet in safe public places. Never enter your UPI PIN to receive money or pay advance fees.</string>
 </resources>

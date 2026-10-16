@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="discovery_title">फेयरस्वैप</string>
+    <string name="discovery_search_hint">पास के विज्ञापन खोजें…</string>
+    <string name="discovery_search_button">खोजें</string>
+
+    <string name="discovery_recent_searches">हाल की खोजें</string>
+    <string name="discovery_clear">साफ़ करें</string>
+    <string name="discovery_categories">श्रेणियाँ</string>
+    <string name="discovery_all">सभी</string>
+    <string name="discovery_city">शहर</string>
+    <string name="discovery_locality">इलाका</string>
+    <string name="discovery_condition">स्थिति</string>
+    <string name="discovery_sort">क्रम</string>
+    <string name="discovery_min_price">न्यूनतम ₹</string>
+    <string name="discovery_max_price">अधिकतम ₹</string>
+    <string name="discovery_apply_filters">फ़िल्टर लागू करें</string>
+    <string name="discovery_hide_filters">फ़िल्टर छुपाएं ▲</string>
+    <string name="discovery_show_filters">फ़िल्टर ▼</string>
+    <string name="discovery_refresh">रीफ्रेश करें</string>
+    <string name="discovery_retry_metadata">पुनः प्रयास करें</string>
+    <string name="discovery_results_found">%d विज्ञापन मिले</string>
+    <string name="discovery_results_stale"> · पिछले परिणाम दिखा रहा है</string>
+    <string name="discovery_retry">पुनः प्रयास करें</string>
+    <string name="discovery_no_listings">आपकी खोज से कोई विज्ञापन मेल नहीं खाता।</string>
+    <string name="discovery_no_listings_hint">अलग-अलग कीवर्ड के साथ खोजने का प्रयास करें, या फ़िल्टर साफ़ करें।</string>
+    <string name="discovery_clear_all_filters">सभी फ़िल्टर साफ़ करें</string>
+    <string name="discovery_load_more">और विज्ञापन लोड करें</string>
+    <string name="discovery_safety_tip_title">🛡️ सुरक्षित व्यापार सुझाव</string>
+    <string name="discovery_safety_tip_1">• दिन के उजाले में एक सुरक्षित, सार्वजनिक स्थान पर मिलें।</string>
+    <string name="discovery_safety_tip_2">• भुगतान पूरा करने से पहले आइटम का अच्छी तरह निरीक्षण करें।</string>
+    <string name="discovery_safety_tip_3">• पैसे प्राप्त करने के लिए कभी भी अपना यूपीआई (UPI) पिन दर्ज न करें।</string>
+    <string name="discovery_safety_tip_4">• अग्रिम शिपिंग शुल्क या असत्यापित भुगतान लिंक से बचें।</string>
+    <string name="discovery_safety_tip_5">• साइबर अपराध/धोखाधड़ी की रिपोर्ट 1930 पर करें।</string>
+</resources>

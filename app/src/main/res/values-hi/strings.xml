@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">फेयरस्वैप</string>
+    <string name="tab_home">होम</string>
+    <string name="tab_saved">सेव किए गए</string>
+    <string name="tab_sell">बेचें</string>
+    <string name="tab_chats">चैट्स</string>
+    <string name="tab_you">आप</string>
+    <string name="search_hint">पास के विज्ञापन खोजें&#8230;</string>
+    <string name="tagline">दें • लें • साथ बढ़ें</string>
+    <string name="safety_tip_title">🛡️ सुरक्षित व्यापार सुझाव</string>
+    <string name="safety_tip_body">दिन के उजाले में सुरक्षित सार्वजनिक स्थानों पर मिलें। पैसे प्राप्त करने के लिए कभी भी अपना यूपीआई पिन दर्ज न करें।</string>
+</resources>

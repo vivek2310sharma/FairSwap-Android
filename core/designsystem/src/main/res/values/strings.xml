@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common Actions -->
+    <string name="action_back">Back</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_sign_out">Sign Out</string>
+
+    <!-- Account Screen -->
+    <string name="account_title">My Account</string>
+    <string name="account_public_profile">Public Profile</string>
+    <string name="account_name">Name: %s</string>
+    <string name="account_location">Location: %s</string>
+    <string name="account_bio">Bio: %s</string>
+    <string name="account_not_set">Not set</string>
+    <string name="account_no_bio">No bio yet.</string>
+    <string name="account_edit_public_profile">Edit Public Profile</string>
+    
+    <string name="account_security_status">Security &amp; Status</string>
+    <string name="account_email">Email: %s</string>
+    <string name="account_status">Status: %s</string>
+    <string name="account_terms_version">Terms Version: %s</string>
+
+    <string name="account_lang_region">Language &amp; Region</string>
+    <string name="account_lang_desc">Choose your preferred display language:</string>
+
+    <string name="account_my_listings">My Listings</string>
+    <string name="account_my_listings_desc">Manage marketplace items &amp; photos</string>
+    <string name="account_view_listings">View Listings →</string>
+
+    <string name="account_messages">Messages</string>
+    <string name="account_messages_desc">Buyer and seller chats</string>
+    <string name="account_view_inbox">View Inbox →</string>
+
+    <string name="account_notifications">Notifications</string>
+    <string name="account_notifications_desc">Activity and alerts</string>
+    <string name="account_notification_center">Notification Center →</string>
+
+    <string name="account_saved_favourites">Saved Favourites</string>
+    <string name="account_view_favourites">View Favourites →</string>
+
+    <string name="account_privacy_safety">Privacy &amp; Safety</string>
+    <string name="account_blocked_users">Blocked Users</string>
+    <string name="account_privacy_requests">Privacy Requests</string>
+    <string name="account_support">Support</string>
+    <string name="account_safety_center">Safety Center</string>
+    <string name="account_terms">Terms of Service</string>
+    <string name="account_privacy_policy">Privacy Policy</string>
+
+    <!-- Auth / Guest -->
+    <string name="auth_language_picker">Language / भाषा</string>
+    <string name="auth_english">English</string>
+    <string name="auth_hindi">हिन्दी</string>
+    <string name="auth_help_center">Help Center</string>
+    <string name="auth_terms">Terms</string>
+    <string name="auth_privacy">Privacy</string>
+    <string name="auth_sign_in">Sign In</string>
+    <string name="auth_sign_up">Sign Up</string>
+    <string name="auth_check_email_title">Check your email</string>
+    <string name="auth_check_email_desc">We sent a confirmation link to %s. Confirm your email before signing in.</string>
+    <string name="auth_policy_review_title">Policy review required</string>
+    <string name="auth_policy_review_desc">Welcome back, %s. Review and accept the current Public Beta policies to continue.</string>
+    <string name="auth_terms_accept">I accept the Terms of Service and Acceptable Use Policy, and acknowledge the Privacy Policy.</string>
+    <string name="auth_age_accept">I confirm that I am at least %d years old.</string>
+    <string name="auth_accept_continue">Accept and continue</string>
+    <string name="auth_account_unavailable">Account unavailable</string>
+    <string name="auth_status">Current account status: %s</string>
+    <string name="auth_back_to_sign_in">Back to sign in</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_continue">Continue</string>
+
+    <!-- Listing Detail -->
+    <string name="listing_detail_negotiable">Negotiable</string>
+    <string name="listing_detail_condition_category">Condition: %1$s · Category: %2$s</string>
+    <string name="listing_detail_posted_on">Posted on %s</string>
+    <string name="listing_detail_description">Description</string>
+    <string name="listing_detail_specifications">Specifications</string>
+    <string name="listing_detail_seller_details">Seller Details</string>
+    <string name="listing_detail_member_since">Member since %s</string>
+    <string name="listing_detail_seller_profile">Seller Profile</string>
+    <string name="listing_detail_message_seller">Message Seller</string>
+    <string name="listing_detail_report">Report</string>
+    <string name="listing_detail_share">Share</string>
+    <string name="listing_detail_you_own">ℹ️ You own this listing</string>
+    <string name="listing_detail_no_photo">No photo</string>
+    <string name="listing_detail_unavailable_title">Listing Unavailable</string>
+    <string name="listing_detail_unavailable_desc">This item may have been sold, removed, or is no longer active.</string>
+    <string name="listing_detail_planned_features">Planned Features</string>
+    <string name="listing_detail_planned_desc">We are working to bring you secure payments and delivery.</string>
+
+    <!-- Favourites -->
+    <string name="favourites_title">Saved Favourites</string>
+    <string name="favourites_showing_stale">Showing saved results from your last successful load.</string>
+    <string name="favourites_sign_in_title">Sign In to Sync Favourites</string>
+    <string name="favourites_sign_in_desc">Saved items sync across devices when you are signed in.</string>
+    <string name="favourites_sign_in_button">Sign In / Create Account</string>
+    <string name="favourites_review_policies">Review the current policies before changing saved favourites.</string>
+    <string name="favourites_review_button">Review policies</string>
+    <string name="favourites_unavailable_count">%d saved items are no longer available.</string>
+    <string name="favourites_clear_unavailable">Clear unavailable</string>
+    <string name="favourites_no_saved_title">♡ No Saved Favourites Yet</string>
+    <string name="favourites_no_saved_desc">Tap the heart icon on any listing to save items for quick access here.</string>
+    <string name="favourites_browse">Browse Marketplace Listings</string>
+    <string name="favourites_load_more">Load more</string>
+    <string name="favourites_end">End of saved favourites</string>
+
+    <!-- My Listings -->
+    <string name="my_listings_title">My Listings</string>
+    <string name="my_listings_create">Create Listing</string>
+    <string name="my_listings_no_listings">No listings found.</string>
+    <string name="my_listings_no_listings_desc">Create your first draft listing to sell items on FairSwap.</string>
+    <string name="my_listings_unfinished_draft">📝 Unfinished Draft</string>
+    <string name="my_listings_untitled">Untitled Listing</string>
+    <string name="my_listings_continue">Continue</string>
+    <string name="my_listings_no_status_listings">No %s listings.</string>
+    <string name="my_listings_no_status_desc">You don\'t have any listings in this status.</string>
+    <string name="my_listings_revision">Revision #%1$d • Renewals: %2$d/3</string>
+    <string name="my_listings_rejection_reason">Rejection Reason:</string>
+    <string name="my_listings_removal_reason">Moderation Removal Reason:</string>
+    <string name="my_listings_photo_required">At least one ready photo is required to submit for review.</string>
+
+    <!-- Seller Profile -->
+    <string name="seller_profile_unavailable">Seller unavailable</string>
+    <string name="seller_profile_dismiss">Dismiss</string>
+    <string name="seller_profile_report_user">Report User</string>
+    <string name="seller_profile_block_user">Block User</string>
+    <string name="seller_profile_blocking">Blocking...</string>
+    <string name="seller_profile_listings_shown">%d public listings shown</string>
+    <string name="seller_profile_block_dialog_title">Block User?</string>
+    <string name="seller_profile_block_dialog_desc">They will no longer be able to send you messages or start new inquiries. You can unblock them anytime in Blocked Users.</string>
+    <string name="seller_profile_block_confirm">Block</string>
+
+    <!-- Chats -->
+    <string name="chats_title">Messages</string>
+    <string name="chats_no_messages">No messages yet.</string>
+    <string name="chats_type_message">Type a message...</string>
+    <string name="chats_send">Send</string>
+
+    <string name="safety_advice_buyers">🛡️ Safety Advice for Buyers</string>
+    <string name="safety_advice_1">• Meet in a safe, public place in daylight.</string>
+    <string name="safety_advice_2">• Inspect the item thoroughly before completing payment.</string>
+    <string name="safety_advice_3">• NEVER enter your UPI PIN to receive money.</string>
+    <string name="safety_advice_4">• Avoid advance shipping fees or unverified payment links.</string>
+    <string name="safety_advice_5">• Report cybercrime / fraud to 1930.</string>
+    <string name="auth_browse_marketplace">Browse marketplace</string>
+    <string name="auth_fairswap_account">FairSwap account</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_mark_all_read">Mark all read</string>
+    <string name="notifications_empty">No notifications yet.</string>
+    <string name="planned_feature_make_offer">Make Offer</string>
+    <string name="planned_feature_buy_now">Buy Now</string>
+    <string name="planned_feature_delivery">Delivery</string>
+    <string name="planned_feature_disputes">Disputes</string>
+    <string name="notifications_sign_in_required">Sign in to view notifications.</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_saved">Saved</string>
+    <string name="nav_sell">Sell</string>
+    <string name="nav_chats">Chats</string>
+    <string name="nav_you">You</string>
+    <string name="safety_center_title">Safety Center</string>
+    <string name="safety_tips_title">Safety Tips</string>
+    <string name="safety_tips_desc">Follow these guidelines for safe transactions.</string>
+    <string name="safety_upi_title">Dummy English for safety_upi_title</string>
+    <string name="safety_upi_desc">Dummy English for safety_upi_desc</string>
+    <string name="safety_advance_title">Dummy English for safety_advance_title</string>
+    <string name="safety_advance_desc">Dummy English for safety_advance_desc</string>
+    <string name="safety_meet_title">Dummy English for safety_meet_title</string>
+    <string name="safety_meet_desc">Dummy English for safety_meet_desc</string>
+    <string name="safety_impersonation_title">Dummy English for safety_impersonation_title</string>
+    <string name="safety_impersonation_desc">Dummy English for safety_impersonation_desc</string>
+    <string name="safety_fraud_title">Dummy English for safety_fraud_title</string>
+    <string name="safety_fraud_desc">Dummy English for safety_fraud_desc</string>
+    <string name="action_report_cybercrime">Dummy English for action_report_cybercrime</string>
+    <string name="action_call_1930">Dummy English for action_call_1930</string>
+    <string name="action_help_center">Dummy English for action_help_center</string>
+    <string name="error_cannot_open_browser">Dummy English for error_cannot_open_browser</string>
+    <string name="error_cannot_open_dialer">Dummy English for error_cannot_open_dialer</string>
+</resources>

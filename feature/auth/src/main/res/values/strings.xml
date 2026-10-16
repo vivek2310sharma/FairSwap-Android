@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Auth Screen -->
+    <string name="auth_browse_marketplace">Browse marketplace</string>
+    <string name="auth_fairswap_account">FairSwap account</string>
+</resources>

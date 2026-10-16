@@ -26,6 +26,7 @@ data class DiscoveryUiState(
     val categories: List<Category> = emptyList(),
     val cities: List<City> = emptyList(),
     val localities: List<Locality> = emptyList(),
+    val recentSearches: List<String> = emptyList(),
     val results: ResultsState = ResultsState(),
     val loadingFirstPage: Boolean = false,
     val loadingMore: Boolean = false,
@@ -110,16 +111,30 @@ class DiscoveryViewModel @Inject constructor(
         mutableState.value.draft.cityId?.let(::selectCity)
     }
 
-
     fun applyFilters() {
         val filters = mutableState.value.draft
         filters.validate()?.let { message ->
             mutableState.update { it.copy(inputError = message) }
             return
         }
+        val cleanQuery = filters.query.trim()
+        val updatedRecent = if (cleanQuery.isNotBlank()) {
+            (listOf(cleanQuery) + mutableState.value.recentSearches.filterNot { it.equals(cleanQuery, ignoreCase = true) }).take(5)
+        } else {
+            mutableState.value.recentSearches
+        }
         searchJob?.cancel()
-        mutableState.update { it.apply(filters) }
+        mutableState.update { it.apply(filters).copy(recentSearches = updatedRecent) }
         requestFirstPage(filters)
+    }
+
+    fun selectRecentSearch(query: String) {
+        editFilters { it.copy(query = query) }
+        applyFilters()
+    }
+
+    fun clearRecentSearches() {
+        mutableState.update { it.copy(recentSearches = emptyList()) }
     }
 
     fun clearFilters() {
