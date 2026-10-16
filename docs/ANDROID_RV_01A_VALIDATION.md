@@ -10,7 +10,7 @@ Date: October 16, 2026
 ---
 
 > **Correction Note (Added during RV-01B):**
-> - **Guest Journey Classification Correction:** The staging emulator instance used during RV-01A possessed an active authenticated staging user session (`Name: Vicky`, `vivek.kewl@gmail.com`). Therefore, guest-specific checks on the Saved and You tabs were NOT VERIFIED as a signed-out guest in RV-01A (authenticated dashboard and saved state cards were rendered). App data was preserved without clearing per CTO directive.
+> - **Guest Journey Classification Correction:** The staging emulator instance used during RV-01A possessed an active authenticated staging user session (`Name: [REDACTED]`, `[REDACTED_EMAIL]`). Therefore, guest-specific checks on the Saved and You tabs were NOT VERIFIED as a signed-out guest in RV-01A (authenticated dashboard and saved state cards were rendered). App data was preserved without clearing per CTO directive.
 > - **Search Verification Detail:** Search execution was formally verified in RV-01B with query `"Stale"`, returning 1 matching staging listing, and empty query resetting the feed to 5 listings.
 
 ---

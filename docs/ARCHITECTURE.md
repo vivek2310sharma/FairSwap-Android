@@ -14,13 +14,30 @@ Compose UI
   -> PostgreSQL RLS + trusted RPCs
 ```
 
-Android-0 contains only the modules needed for a working foundation:
+The application is structured into the following foundation and feature modules:
 
-```text
-app
-core:network
-core:designsystem
-```
+**App Layer**
+- `app`
+
+**Core Layers**
+- `core:network`
+- `core:designsystem`
+- `core:auth`
+- `core:account`
+- `core:discovery`
+- `core:favourites`
+- `core:sellerlistings`
+- `core:communication`
+
+**Feature Layers**
+- `feature:auth`
+- `feature:account`
+- `feature:discovery`
+- `feature:listingdetail`
+- `feature:favourites`
+- `feature:sellerlistings`
+- `feature:sellerprofile`
+- `feature:communication`
 
 Feature modules are added when they contain a real vertical slice.
 
@@ -28,17 +45,3 @@ Feature modules are added when they contain a real vertical slice.
 
 - Client credential: Supabase publishable/anon key only.
 - User authorization: current Supabase session + PostgreSQL RLS.
-- State transitions/business invariants: existing database constraints, triggers and RPCs.
-- Elevated operations: server-side only; never moved into the APK.
-
-## Environment boundary
-
-`staging` and `production` are Gradle product flavors. Android Phase 1 uses `staging` and FairSwapTest. Production credentials remain unset unless explicitly authorized.
-
-## Navigation
-
-Navigation 3 uses serializable `NavKey` types.
-
-## Offline policy
-
-Offline behavior is feature-specific. Read caches and idempotent outboxes can be added when required. Security-sensitive mutations must not report success until the authoritative backend accepts them.
