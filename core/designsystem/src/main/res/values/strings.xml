@@ -162,4 +162,5 @@
     <string name="nav_chats">Chats</string>
     <string name="nav_you">You</string>
     <string name="safety_center_title">Safety Center</string>
+    <string name="safety_tips_title">Safety Tips</string>
 </resources>
