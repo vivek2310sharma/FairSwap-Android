@@ -161,4 +161,5 @@
     <string name="nav_sell">Sell</string>
     <string name="nav_chats">Chats</string>
     <string name="nav_you">You</string>
+    <string name="safety_center_title">Safety Center</string>
 </resources>
