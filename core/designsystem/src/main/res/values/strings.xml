@@ -163,4 +163,20 @@
     <string name="nav_you">You</string>
     <string name="safety_center_title">Safety Center</string>
     <string name="safety_tips_title">Safety Tips</string>
+    <string name="safety_tips_desc">Follow these guidelines for safe transactions.</string>
+    <string name="safety_upi_title">Dummy English for safety_upi_title</string>
+    <string name="safety_upi_desc">Dummy English for safety_upi_desc</string>
+    <string name="safety_advance_title">Dummy English for safety_advance_title</string>
+    <string name="safety_advance_desc">Dummy English for safety_advance_desc</string>
+    <string name="safety_meet_title">Dummy English for safety_meet_title</string>
+    <string name="safety_meet_desc">Dummy English for safety_meet_desc</string>
+    <string name="safety_impersonation_title">Dummy English for safety_impersonation_title</string>
+    <string name="safety_impersonation_desc">Dummy English for safety_impersonation_desc</string>
+    <string name="safety_fraud_title">Dummy English for safety_fraud_title</string>
+    <string name="safety_fraud_desc">Dummy English for safety_fraud_desc</string>
+    <string name="action_report_cybercrime">Dummy English for action_report_cybercrime</string>
+    <string name="action_call_1930">Dummy English for action_call_1930</string>
+    <string name="action_help_center">Dummy English for action_help_center</string>
+    <string name="error_cannot_open_browser">Dummy English for error_cannot_open_browser</string>
+    <string name="error_cannot_open_dialer">Dummy English for error_cannot_open_dialer</string>
 </resources>
