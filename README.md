@@ -1,6 +1,6 @@
 # FairSwap Android
 
-Native Android client for FairSwap, sharing the existing Supabase backend with `FairSwap-Web`.
+Native Android client for FairSwap, consuming the shared Supabase backend whose canonical schema, RLS, RPC and Edge source is maintained in `FairSwap-Backend`. `FairSwap-Web` remains a separate marketplace client; exclusive hosted backend deployment authority has not yet transferred.
 
 ## Status
 
