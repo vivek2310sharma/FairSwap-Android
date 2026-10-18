@@ -247,6 +247,9 @@ class AuthViewModel @Inject constructor(
     }
 
     fun refresh() {
+        // A session-status update can request refresh while sign-in is still finishing.
+        // Do not invalidate the in-flight auth generation when launchAuth would refuse it.
+        if (uiState.isLoading) return
         val currentGen = ++authGenerationId
         launchAuth {
             if (currentGen == authGenerationId) repository.bootstrap() else AuthGate.Failure("Cancelled")
