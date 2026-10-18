@@ -38,6 +38,8 @@ private class FakeAuthRepository : AuthRepository {
     var signOutCallCount = 0
 
     var nextBootstrapGate: AuthGate = AuthGate.SignedOut
+    var nextSignInGate: AuthGate = AuthGate.SignedOut
+    var signInRelease: CompletableDeferred<Unit>? = null
     var nextOtpRequestResult: EmailOtpRequestResult = EmailOtpRequestResult.Acknowledged
     var nextOtpVerifyResult: EmailOtpVerificationResult = EmailOtpVerificationResult.Authenticated(AuthGate.SignedIn(com.fairswap.core.auth.ProfileSummary("id", "name"), com.fairswap.core.auth.AccountSummary("id", "active")))
 
@@ -55,7 +57,8 @@ private class FakeAuthRepository : AuthRepository {
     override suspend fun signIn(email: String, password: String): AuthGate {
         signInCalled = true
         lastSignInEmail = email
-        return AuthGate.SignedOut
+        signInRelease?.await()
+        return nextSignInGate
     }
     override suspend fun signUp(input: SignUpInput): AuthGate {
         signUpCalled = true
@@ -452,6 +455,33 @@ class AuthViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(SignInStep.Otp, viewModel.uiState.signInStep)
         assertEquals(1, repo.requestOtpCallCount)
+    }
+
+    @Test
+    fun `refresh while login is loading preserves the authenticated result`() = runTest {
+        val repo = FakeAuthRepository()
+        val viewModel = AuthViewModel(repo, AuthCallbackCoordinator())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        repo.signInRelease = CompletableDeferred()
+        repo.nextSignInGate = AuthGate.SignedIn(
+            com.fairswap.core.auth.ProfileSummary("user-1", "Buyer"),
+            com.fairswap.core.auth.AccountSummary("user-1", "active"),
+        )
+        viewModel.submitEmail("buyer@example.com")
+        viewModel.signIn("buyer@example.com", "password")
+        runCurrent()
+        assertTrue(viewModel.uiState.isLoading)
+        assertTrue(repo.signInCalled)
+
+        // Mirrors App navigation's session mismatch refresh during first login.
+        viewModel.refresh()
+        repo.signInRelease!!.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.gate is AuthGate.SignedIn)
+        assertFalse(viewModel.uiState.isLoading)
+        assertFalse(viewModel.uiState.isInitializing)
     }
 
     @Test
