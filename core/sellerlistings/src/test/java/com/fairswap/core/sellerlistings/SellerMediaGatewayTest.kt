@@ -52,6 +52,69 @@ class SellerMediaGatewayTest {
         assertEquals("application/json", capturedAcceptHeader)
     }
 
+    /**
+     * V2 B4: signed derivatives keep the native JSON contract, including when
+     * Storage is on an independently credentialed host.
+     * Seller Bearer tokens are sent ONLY to FairSwap-Web.
+     */
+    @Test
+    fun `B4 sealed derivative keeps signed URL JSON contract and Bearer on Web only`() = runTest {
+        val token = "b4_private_seller_access_token"
+        val signed = "https://sealed-media.example.in/storage/v1/object/sign/listing-derivatives/l1/m1/v2/asset/sha/thumb.webp?token=b4_signed"
+        var requestPath: String? = null
+        var requestAuth: String? = null
+        var requestAccept: String? = null
+
+        val gateway = KtorSellerMediaGateway(
+            config = config,
+            supabase = supabase,
+            httpClient = HttpClient(MockEngine { request ->
+                requestPath = request.url.encodedPath
+                requestAuth = request.headers[HttpHeaders.Authorization]
+                requestAccept = request.headers[HttpHeaders.Accept]
+                respond(
+                    content = """{"url":"$signed","expiresIn":60}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }) { followRedirects = false },
+            tokenProvider = { token },
+        )
+
+        val result = gateway.getSignedDerivativeUrl("l1", "m1", "thumb")
+        assertTrue(result is SellerMediaGetSignedUrlResult.Success)
+        val url = (result as SellerMediaGetSignedUrlResult.Success).signedUrl
+        assertEquals(signed, url.url)
+        assertEquals(60, url.expiresInSeconds)
+        assertEquals("/api/listings/l1/media/m1/thumb", requestPath)
+        assertEquals("Bearer $token", requestAuth)
+        assertEquals("application/json", requestAccept)
+        assertFalse(url.url.contains(token))
+    }
+
+    @Test
+    fun `B4 signed derivative refuses cross-host HTTP redirect`() = runTest {
+        val gateway = KtorSellerMediaGateway(
+            config = config,
+            supabase = supabase,
+            httpClient = HttpClient(MockEngine {
+                respond(
+                    "",
+                    HttpStatusCode.Found,
+                    headers = headersOf(HttpHeaders.Location, "https://untrusted.example.net/collect"),
+                )
+            }) { followRedirects = false },
+            tokenProvider = { "secret_to_web_only" },
+        )
+
+        val result = gateway.getSignedDerivativeUrl("l1", "m1", "medium")
+        assertTrue(result is SellerMediaGetSignedUrlResult.Failure)
+        assertEquals(
+            SellerMediaFailure.MediaServiceUnavailable,
+            (result as SellerMediaGetSignedUrlResult.Failure).error,
+        )
+    }
+
     @Test
     fun `getSignedDerivativeUrl forbids original size`() = runTest {
         val mockEngine = MockEngine { respond("", HttpStatusCode.OK) }
