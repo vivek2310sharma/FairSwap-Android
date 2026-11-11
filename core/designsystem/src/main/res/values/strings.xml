@@ -118,7 +118,7 @@
     <string name="my_listings_continue">Continue</string>
     <string name="my_listings_no_status_listings">No %s listings.</string>
     <string name="my_listings_no_status_desc">You don\'t have any listings in this status.</string>
-    <string name="my_listings_revision">Revision #%1$d • Renewals: %2$d/3</string>
+    <string name="my_listings_revision">Revision #%1$d • Renewals: %2$d/3 • Valid for 365 days after approval</string>
     <string name="my_listings_rejection_reason">Rejection Reason:</string>
     <string name="my_listings_removal_reason">Moderation Removal Reason:</string>
     <string name="my_listings_photo_required">At least one ready photo is required to submit for review.</string>
