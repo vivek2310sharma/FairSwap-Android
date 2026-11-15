@@ -299,7 +299,7 @@ fun MyListingsScreen(
         }
         val text = when (action) {
             SellerLifecycleAction.MARK_SOLD -> "Marking this item as sold cannot be undone. It will move to completed sales."
-            SellerLifecycleAction.RENEW -> "Renewing this listing will send it back for moderator review."
+            SellerLifecycleAction.RENEW -> "Renewing uses one of your 3 renewals and sends the listing for review. Once approved, it is valid for 365 days from publication, unless sold or removed sooner."
             else -> "Are you sure you want to perform this action?"
         }
 
