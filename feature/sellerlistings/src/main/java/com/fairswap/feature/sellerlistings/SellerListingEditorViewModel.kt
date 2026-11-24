@@ -276,16 +276,17 @@ class SellerListingEditorViewModel @Inject constructor(
                             return@coroutineScope
                         }
 
-                        val categories = (catRes as ReferenceDataResult.Success).value
+                        val rawCategories = (catRes as ReferenceDataResult.Success).value
                         val cities = (cityRes as ReferenceDataResult.Success).value
 
                         if (listingId == null) {
+                            val creationCategories = rawCategories.filter { it.newListingEnabled && !it.isTestCategory }
                             _state.update {
                                 it.copy(
                                     isLoading = false,
-                                    categories = categories,
+                                    categories = creationCategories,
                                     cities = cities,
-                                    categoriesEmpty = categories.isEmpty(),
+                                    categoriesEmpty = creationCategories.isEmpty(),
                                     citiesEmpty = cities.isEmpty(),
                                 )
                             }
@@ -293,6 +294,7 @@ class SellerListingEditorViewModel @Inject constructor(
                             when (val detailResult = repository.loadDetail(listingId, currentSession)) {
                                 is SellerDetailResult.Success -> {
                                     val detail = detailResult.listing
+                                    val editingCategories = rawCategories.filter { (it.newListingEnabled && !it.isTestCategory) || it.id == detail.categoryId }
                                     val cityId = detail.cityId
                                     val localitiesRes = if (!cityId.isNullOrBlank()) {
                                         repository.loadLocalities(cityId)
@@ -314,7 +316,7 @@ class SellerListingEditorViewModel @Inject constructor(
                                         _state.update {
                                             it.copy(
                                                 isLoading = false,
-                                                categories = categories,
+                                                categories = editingCategories,
                                                 cities = cities,
                                                 localities = localities,
                                                 attributeMetadata = attributes,
@@ -324,7 +326,7 @@ class SellerListingEditorViewModel @Inject constructor(
                                                 readyMediaCount = detail.readyMediaCount,
                                                 input = detail.toInput(),
                                                 priorLocalityId = priorLocality,
-                                                categoriesEmpty = categories.isEmpty(),
+                                                categoriesEmpty = editingCategories.isEmpty(),
                                                 citiesEmpty = cities.isEmpty(),
                                                 pincodeUiState = if (pin?.trim()?.length == 6) PincodeUiState.Loading(pin.trim()) else PincodeUiState.Idle(pin ?: "")
                                             )

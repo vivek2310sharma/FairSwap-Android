@@ -2,6 +2,18 @@ package com.fairswap.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
+// FairSwap Visual System Brand Tokens (Blue & Green Identity)
+val FairSwapPrimaryNavy = Color(0xFF061A46)
+val FairSwapPrimaryBlue = Color(0xFF0878F9)
+val FairSwapCyanAccent = Color(0xFF00C8E8)
+val FairSwapBrightGreen = Color(0xFF39D916)
+val FairSwapDeepGreen = Color(0xFF008A45)
+val FairSwapMainBackground = Color(0xFFF5F8FC)
+val FairSwapSurface = Color(0xFFFFFFFF)
+val FairSwapPrimaryText = Color(0xFF061A46)
+val FairSwapSecondaryText = Color(0xFF526070)
+val FairSwapSubtleBorder = Color(0xFFE2E8F0)
+
 // FairSwap Brand Palette (from globals.css)
 val Brand50 = Color(0xFFECFDF5)
 val Brand100 = Color(0xFFD1FAE5)

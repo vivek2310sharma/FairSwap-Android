@@ -64,7 +64,7 @@ class SupabaseSellerListingGateway(
             "category:categories(id, name, slug), city:cities(id, name, state)",
     )
 
-    private val categoryColumns = Columns.raw("id, slug, name, description, icon, sort_order, is_active")
+    private val categoryColumns = Columns.raw("id, slug, name, description, icon, sort_order, is_active, macro_category, new_listing_enabled")
     private val cityColumns = Columns.raw("id, name, state, slug, is_active")
     private val localityColumns = Columns.raw("id, city_id, name, slug, is_active")
 

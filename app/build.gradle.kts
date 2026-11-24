@@ -32,7 +32,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -46,7 +46,14 @@ android {
             manifestPlaceholders["authCallbackHost"] = "auth"
             buildConfigField("String", "AUTH_CALLBACK_SCHEME", stringLiteral("fairswap-staging"))
             buildConfigField("String", "AUTH_CALLBACK_HOST", stringLiteral("auth"))
-            buildConfigField("String", "FAIRSWAP_WEB_BASE_URL", stringLiteral(configValue("FAIRSWAP_STAGING_WEB_BASE_URL")))
+            buildConfigField(
+                "String",
+                "FAIRSWAP_WEB_BASE_URL",
+                stringLiteral(
+                    configValue("FAIRSWAP_STAGING_WEB_BASE_URL")
+                        .ifBlank { "https://fairswap.app" }
+                ),
+            )
             buildConfigField("String", "ENVIRONMENT_NAME", stringLiteral("staging"))
             buildConfigField(
                 "String",
@@ -70,9 +77,17 @@ android {
             manifestPlaceholders["authCallbackHost"] = "auth"
             buildConfigField("String", "AUTH_CALLBACK_SCHEME", stringLiteral("fairswap"))
             buildConfigField("String", "AUTH_CALLBACK_HOST", stringLiteral("auth"))
-            buildConfigField("String", "FAIRSWAP_WEB_BASE_URL", stringLiteral(configValue("FAIRSWAP_PRODUCTION_WEB_BASE_URL")))
             buildConfigField("String", "ENVIRONMENT_NAME", stringLiteral("production"))
-            buildConfigField("String", "SUPABASE_URL", stringLiteral(configValue("SUPABASE_PRODUCTION_URL")))
+            buildConfigField(
+                "String",
+                "FAIRSWAP_WEB_BASE_URL",
+                stringLiteral(configValue("FAIRSWAP_PRODUCTION_WEB_BASE_URL")),
+            )
+            buildConfigField(
+                "String",
+                "SUPABASE_URL",
+                stringLiteral(configValue("SUPABASE_PRODUCTION_URL")),
+            )
             buildConfigField(
                 "String",
                 "SUPABASE_PUBLISHABLE_KEY",
@@ -104,21 +119,35 @@ android {
 
 androidComponents {
     onVariants { variant ->
-        if (variant.flavorName == "staging") {
+        val isStaging = variant.flavorName == "staging"
+        if (isStaging) {
             val key = configValue("SUPABASE_STAGING_PUBLISHABLE_KEY")
             val url = configValue("SUPABASE_STAGING_URL").ifBlank { "https://wpppxlnbzqynvhpeuavd.supabase.co" }
             check(key.isNotBlank()) {
-                "Build error: SUPABASE_STAGING_PUBLISHABLE_KEY is required for staging builds. " +
-                "Provide it in local.properties or via SUPABASE_STAGING_PUBLISHABLE_KEY environment variable."
+                "Build error: SUPABASE_STAGING_PUBLISHABLE_KEY is required for staging builds. Provide it in local.properties or via environment variables."
             }
             check(url.startsWith("https://")) {
-                "Build error: SUPABASE_STAGING_URL must be a valid HTTPS URL for staging builds."
+                "Build error: SUPABASE_STAGING_URL must be a valid HTTPS URL."
+            }
+        } else {
+            val key = configValue("SUPABASE_PRODUCTION_PUBLISHABLE_KEY")
+            val url = configValue("SUPABASE_PRODUCTION_URL")
+            val webUrl = configValue("FAIRSWAP_PRODUCTION_WEB_BASE_URL")
+            check(key.isNotBlank()) {
+                "Build error: SUPABASE_PRODUCTION_PUBLISHABLE_KEY is required for production builds. Provide it in local.properties or via environment variables."
+            }
+            check(url.startsWith("https://")) {
+                "Build error: SUPABASE_PRODUCTION_URL is required and must be a valid HTTPS URL for production builds."
+            }
+            check(webUrl.startsWith("https://")) {
+                "Build error: FAIRSWAP_PRODUCTION_WEB_BASE_URL is required and must be a valid HTTPS URL for production builds."
             }
         }
     }
 }
 
 dependencies {
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation(project(":core:network"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:auth"))

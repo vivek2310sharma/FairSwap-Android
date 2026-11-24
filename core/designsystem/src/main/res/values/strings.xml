@@ -148,6 +148,8 @@
     <string name="safety_advice_5">• Report cybercrime / fraud to 1930.</string>
     <string name="auth_browse_marketplace">Browse marketplace</string>
     <string name="auth_fairswap_account">FairSwap account</string>
+    <string name="auth_join_community">Join the FairSwap community</string>
+    <string name="auth_welcome_desc">Sign in to access your FairSwap account and enjoy all marketplace features.</string>
     <string name="notifications_title">Notifications</string>
     <string name="notifications_mark_all_read">Mark all read</string>
     <string name="notifications_empty">No notifications yet.</string>
@@ -179,4 +181,5 @@
     <string name="action_help_center">Dummy English for action_help_center</string>
     <string name="error_cannot_open_browser">Dummy English for error_cannot_open_browser</string>
     <string name="error_cannot_open_dialer">Dummy English for error_cannot_open_dialer</string>
+    <string name="intro_skip">Skip intro</string>
 </resources>

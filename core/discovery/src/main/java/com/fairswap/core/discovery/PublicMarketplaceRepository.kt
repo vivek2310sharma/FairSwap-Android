@@ -76,7 +76,7 @@ class SupabasePublicMarketplaceGateway(private val supabase: SupabaseClient) : P
     private companion object {
         val LISTING_COLUMNS = Columns.list(
             "id,seller_id,title,description,condition,price_type,price_paise,category_attributes,created_at,published_at," +
-                "category:categories(id,name,slug,icon),city:cities(id,name,state),locality:localities(id,name)"
+                "category:categories(id,name,slug,icon,description,sort_order,is_active,macro_category,new_listing_enabled),city:cities(id,name,state),locality:localities(id,name)"
         )
     }
 }

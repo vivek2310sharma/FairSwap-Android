@@ -68,11 +68,11 @@ class DiscoveryRepository(
     }
 
     override suspend fun categories(): List<Category> = supabase.from("categories")
-        .select(columns = Columns.list("id, name, slug, icon")) {
+        .select(columns = Columns.list("id, name, slug, icon, description, sort_order, is_active, macro_category, new_listing_enabled")) {
             filter { eq("is_active", true) }
             order("sort_order", Order.ASCENDING)
             order("name", Order.ASCENDING)
-        }.decodeList()
+        }.decodeList<Category>().filter { !it.isTestCategory }
 
     override suspend fun cities(): List<City> = supabase.from("cities")
         .select(columns = Columns.list("id, name, state")) {

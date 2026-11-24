@@ -143,7 +143,20 @@ data class PublicListingDto(
 )
 
 @Serializable
-data class Category(val id: String, val name: String, val slug: String, val icon: String? = null)
+data class Category(
+    val id: String,
+    val name: String,
+    val slug: String,
+    val icon: String? = null,
+    val description: String? = null,
+    @SerialName("sort_order") val sortOrder: Int = 0,
+    @SerialName("is_active") val isActive: Boolean = true,
+    @SerialName("macro_category") val macroCategory: String? = null,
+    @SerialName("new_listing_enabled") val newListingEnabled: Boolean = true,
+) {
+    val isTestCategory: Boolean
+        get() = slug.startsWith("fs-test") || name.startsWith("FS TEST")
+}
 
 @Serializable
 data class City(val id: String, val name: String, val state: String? = null)

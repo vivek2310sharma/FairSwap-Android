@@ -5,15 +5,20 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.fairswap.app.ui.FairSwapApp
 import com.fairswap.app.ui.LocaleHelper
+import com.fairswap.app.ui.intro.FairSwapV19IntroOverlay
 import com.fairswap.core.auth.AuthCallbackConfig
 import com.fairswap.core.auth.AuthCallbackCoordinator
 import com.fairswap.core.auth.AuthCallbackKind
@@ -41,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var communicationSessionOwner: CommunicationSessionOwner
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -55,19 +61,22 @@ class MainActivity : AppCompatActivity() {
                 LocalConfiguration provides localizedConfiguration
             ) {
                 FairSwapTheme {
-                    FairSwapApp(
-                        callbacks = callbackCoordinator,
-                        favouritesRepository = favouritesRepository,
-                        favouriteStore = favouriteStateStore,
-                        sellerRepository = sellerRepository,
-                        communicationSessionOwner = communicationSessionOwner,
-                        supabase = supabase,
-                        selectedLanguage = currentLanguage,
-                        onLanguageSelected = { lang ->
-                            LocaleHelper.setSelectedLanguage(this, lang)
-                            currentLanguage = lang
-                        }
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        FairSwapApp(
+                            callbacks = callbackCoordinator,
+                            favouritesRepository = favouritesRepository,
+                            favouriteStore = favouriteStateStore,
+                            sellerRepository = sellerRepository,
+                            communicationSessionOwner = communicationSessionOwner,
+                            supabase = supabase,
+                            selectedLanguage = currentLanguage,
+                            onLanguageSelected = { lang ->
+                                LocaleHelper.setSelectedLanguage(this@MainActivity, lang)
+                                currentLanguage = lang
+                            }
+                        )
+                        FairSwapV19IntroOverlay()
+                    }
                 }
             }
         }
