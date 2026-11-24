@@ -741,18 +741,21 @@ fun DiscoveryScreen(
 private fun requestDeviceCity(
     context: Context,
     cities: List<City>,
+    locationDisabledMsg: String,
+    locationPermissionDeniedMsg: String,
+    locationNotFoundMsg: String,
     onCityMatched: (City?) -> Unit,
     onError: (String) -> Unit
 ) {
     val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
     if (locationManager == null) {
-        onError(context.getString(R.string.discovery_location_disabled))
+        onError(locationDisabledMsg)
         return
     }
     val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     if (!isGpsEnabled && !isNetworkEnabled) {
-        onError(context.getString(R.string.discovery_location_disabled))
+        onError(locationDisabledMsg)
         return
     }
 
@@ -760,12 +763,12 @@ private fun requestDeviceCity(
         locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
             ?: locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
     } catch (_: SecurityException) {
-        onError(context.getString(R.string.discovery_location_permission_denied))
+        onError(locationPermissionDeniedMsg)
         return
     }
 
     if (lastLocation == null) {
-        onError(context.getString(R.string.discovery_location_not_found))
+        onError(locationNotFoundMsg)
         return
     }
 
@@ -782,7 +785,7 @@ private fun requestDeviceCity(
                 if (matchedCity != null) {
                     onCityMatched(matchedCity)
                 } else {
-                    onError(context.getString(R.string.discovery_location_not_found))
+                    onError(locationNotFoundMsg)
                 }
             }
         } else {
@@ -797,11 +800,11 @@ private fun requestDeviceCity(
             if (matchedCity != null) {
                 onCityMatched(matchedCity)
             } else {
-                onError(context.getString(R.string.discovery_location_not_found))
+                onError(locationNotFoundMsg)
             }
         }
     } catch (_: Exception) {
-        onError(context.getString(R.string.discovery_location_not_found))
+        onError(locationNotFoundMsg)
     }
 }
 
@@ -813,6 +816,10 @@ private fun LocationSelectionDialog(
     onCitySelected: (String?) -> Unit,
 ) {
     val context = LocalContext.current
+    val locationDisabledMsg = stringResource(id = R.string.discovery_location_disabled)
+    val locationPermissionDeniedMsg = stringResource(id = R.string.discovery_location_permission_denied)
+    val locationNotFoundMsg = stringResource(id = R.string.discovery_location_not_found)
+
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var isAcquiringLocation by remember { mutableStateOf(false) }
 
@@ -827,13 +834,16 @@ private fun LocationSelectionDialog(
             requestDeviceCity(
                 context = context,
                 cities = cities,
+                locationDisabledMsg = locationDisabledMsg,
+                locationPermissionDeniedMsg = locationPermissionDeniedMsg,
+                locationNotFoundMsg = locationNotFoundMsg,
                 onCityMatched = { city ->
                     isAcquiringLocation = false
                     if (city != null) {
                         onCitySelected(city.id)
                         onDismissRequest()
                     } else {
-                        statusMessage = context.getString(R.string.discovery_location_not_found)
+                        statusMessage = locationNotFoundMsg
                     }
                 },
                 onError = { err ->
@@ -842,7 +852,7 @@ private fun LocationSelectionDialog(
                 }
             )
         } else {
-            statusMessage = context.getString(R.string.discovery_location_permission_denied)
+            statusMessage = locationPermissionDeniedMsg
         }
     }
 
