@@ -71,6 +71,45 @@ class DiscoveryModelsTest {
     }
 
     @Test
+    fun categoryIsTestCategoryDetectsTestCategories() {
+        val testCat1 = Category(id = id, name = "FS TEST 20261007 M1 Category", slug = "fs-test-20261007-m1")
+        val testCat2 = Category(id = id, name = "Some Category", slug = "fs-test-slug")
+        val realCat = Category(id = id, name = "Electronics", slug = "electronics")
+        val legitimateCat1 = Category(id = id, name = "Contest Equipment", slug = "contest-equipment")
+
+        assertTrue(testCat1.isTestCategory)
+        assertTrue(testCat2.isTestCategory)
+        assertFalse(realCat.isTestCategory)
+        assertFalse(legitimateCat1.isTestCategory)
+    }
+
+    @Test
+    fun categoryDecodingAndDefaults() {
+        val jsonString = """{"id":"$id","name":"Electronics","slug":"electronics","icon":"laptop","sort_order":1,"is_active":true,"macro_category":"goods","new_listing_enabled":true}"""
+        val decoded = json.decodeFromString<Category>(jsonString)
+        assertEquals("Electronics", decoded.name)
+        assertEquals("electronics", decoded.slug)
+        assertEquals("laptop", decoded.icon)
+        assertEquals(1, decoded.sortOrder)
+        assertTrue(decoded.isActive)
+        assertEquals("goods", decoded.macroCategory)
+        assertTrue(decoded.newListingEnabled)
+    }
+
+    @Test
+    fun categorySortingBySortOrderThenName() {
+        val cat1 = Category(id = "1", name = "Electronics", slug = "electronics", sortOrder = 1)
+        val cat2 = Category(id = "2", name = "Bicycles", slug = "bicycles", sortOrder = 4)
+        val cat3 = Category(id = "3", name = "Furniture", slug = "furniture", sortOrder = 2)
+        val cat4 = Category(id = "4", name = "Books", slug = "books", sortOrder = 2)
+
+        val list = listOf(cat2, cat1, cat3, cat4)
+        val sorted = list.sortedWith(compareBy<Category> { it.sortOrder }.thenBy { it.name })
+
+        assertEquals(listOf("Electronics", "Books", "Furniture", "Bicycles"), sorted.map { it.name })
+    }
+
+    @Test
     fun paginationPreservesOrderAndDataOnFailures() {
         val first = ResultsState().firstPage(SearchPage(listOf(card("a"), card("b")), 4, 1, 2))
         assertTrue(first.canLoadMore)

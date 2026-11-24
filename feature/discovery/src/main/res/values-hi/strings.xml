@@ -32,4 +32,49 @@
     <string name="discovery_safety_tip_3">• पैसे प्राप्त करने के लिए कभी भी अपना यूपीआई (UPI) पिन दर्ज न करें।</string>
     <string name="discovery_safety_tip_4">• अग्रिम शिपिंग शुल्क या असत्यापित भुगतान लिंक से बचें।</string>
     <string name="discovery_safety_tip_5">• साइबर अपराध/धोखाधड़ी की रिपोर्ट 1930 पर करें।</string>
+    <string name="discovery_guest_login_button">लॉग इन करें</string>
+
+    <!-- Hero & Marketing -->
+    <string name="discovery_hero_headline">स्थानीय सौदों और निष्पक्ष व्यापार के लिए भारत का मार्केटप्लेस</string>
+    <string name="discovery_hero_subhead">पास के सत्यापित पड़ोसियों के साथ सुरक्षित रूप से सामान खरीदें, बेचें और साझा करें।</string>
+    <string name="discovery_hero_badge">आधिकारिक फेयरस्वैप लोकल हब</string>
+
+    <!-- How It Works Section -->
+    <string name="discovery_how_it_works_title">फेयरस्वैप कैसे काम करता है</string>
+    <string name="discovery_how_it_works_subtitle">आपके पड़ोस में आसान 4-चरणीय स्थानीय व्यापार</string>
+    <string name="discovery_step1_title">1. खोजें</string>
+    <string name="discovery_step1_desc">पास में गुणवत्तापूर्ण पुराना सामान, वाहन और किराए के मकान खोजें।</string>
+    <string name="discovery_step2_title">2. जुड़ें</string>
+    <string name="discovery_step2_desc">फोन नंबर साझा किए बिना वास्तविक समय में विक्रेताओं से सुरक्षित रूप से चैट करें।</string>
+    <string name="discovery_step3_title">3. जांचें</string>
+    <string name="discovery_step3_desc">आइटम का अच्छी तरह से निरीक्षण करने के लिए दिन के उजाले में सार्वजनिक स्थान पर मिलें।</string>
+    <string name="discovery_step4_title">4. अदला-बदली करें</string>
+    <string name="discovery_step4_desc">संतुष्टि के बाद मौके पर ही भुगतान करें। शून्य अग्रिम शुल्क।</string>
+
+    <!-- Indian Marketplace Safety Tips -->
+    <string name="discovery_safety_section_title">🛡️ भारतीय मार्केटप्लेस सुरक्षा गाइड</string>
+    <string name="discovery_safety_rule_upi_title">यूपीआई (UPI) प्राप्ति नियम</string>
+    <string name="discovery_safety_rule_upi_desc">यूपीआई के माध्यम से पैसे प्राप्त करने के लिए कभी भी अपना पिन दर्ज करने, क्यूआर कोड स्कैन करने या अनुरोध स्वीकृत करने की आवश्यकता नहीं होती है।</string>
+    <string name="discovery_safety_rule_army_title">फर्जी सेना अधिकारी घोटाले</string>
+    <string name="discovery_safety_rule_army_desc">अग्रिम शिपिंग या बुकिंग टोकन मांगने वाले रक्षा अधिकारियों का ढोंग करने वाले धोखेबाजों से सावधान रहें।</string>
+    <string name="discovery_safety_rule_courier_title">फर्जी कूरियर / लिंक घोटाले</string>
+    <string name="discovery_safety_rule_courier_desc">कभी भी बाहरी भुगतान/कूरियर लिंक पर क्लिक न करें। सौदे व्यक्तिगत रूप से पूरे करें।</string>
+
+    <!-- Category Shortcuts -->
+    <string name="discovery_shortcut_mobiles">मोबाइल</string>
+    <string name="discovery_shortcut_laptops">लैपटॉप</string>
+    <string name="discovery_shortcut_bikes">बाइक</string>
+    <string name="discovery_shortcut_furniture">फर्नीचर</string>
+    <string name="discovery_shortcut_fashion">फैशन</string>
+    <string name="discovery_shortcut_cars">कारें</string>
+    <string name="discovery_shortcut_all_categories">सभी श्रेणियाँ</string>
+
+    <!-- Location Selector -->
+    <string name="discovery_location_dialog_title">स्थान चुनें</string>
+    <string name="discovery_location_use_current">📍 वर्तमान स्थान का उपयोग करें</string>
+    <string name="discovery_location_all_india">🌐 संपूर्ण भारत (सभी शहर)</string>
+    <string name="discovery_location_select_city">या अपना शहर चुनें</string>
+    <string name="discovery_location_permission_denied">स्थान अनुमति अस्वीकृत। कृपया नीचे से शहर चुनें।</string>
+    <string name="discovery_location_disabled">स्थान सेवाएं अक्षम हैं। कृपया नीचे से शहर चुनें।</string>
+    <string name="discovery_location_not_found">स्वचालित रूप से शहर का मिलान करने में असमर्थ। कृपया नीचे से शहर चुनें।</string>
 </resources>

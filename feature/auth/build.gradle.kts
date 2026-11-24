@@ -26,6 +26,8 @@ android {
 dependencies {
     implementation(project(":core:auth"))
     implementation(project(":core:designsystem"))
+    implementation(project(":feature:discovery"))
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(platform(libs.androidx.compose.bom))

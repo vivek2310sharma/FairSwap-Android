@@ -17,6 +17,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.activity.compose)
     implementation(project(":core:discovery"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:favourites"))

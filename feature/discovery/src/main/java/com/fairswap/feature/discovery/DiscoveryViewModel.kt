@@ -90,8 +90,9 @@ class DiscoveryViewModel @Inject constructor(
             try {
                 attempt { repository.categories() to repository.cities() }.fold(
                     onSuccess = { (categories, cities) ->
+                        val filteredCategories = categories.filter { !it.isTestCategory }
                         if (generation == metadataGeneration) mutableState.update {
-                            it.copy(categories = categories, cities = cities, metadataError = null)
+                            it.copy(categories = filteredCategories, cities = cities, metadataError = null)
                         }
                     },
                     onFailure = {

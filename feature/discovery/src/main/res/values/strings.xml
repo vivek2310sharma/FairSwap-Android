@@ -32,4 +32,49 @@
     <string name="discovery_safety_tip_3">• NEVER enter your UPI PIN to receive money.</string>
     <string name="discovery_safety_tip_4">• Avoid advance shipping fees or unverified payment links.</string>
     <string name="discovery_safety_tip_5">• Report cybercrime / fraud to 1930.</string>
+    <string name="discovery_guest_login_button">LOG IN</string>
+
+    <!-- Hero & Marketing -->
+    <string name="discovery_hero_headline">India’s Marketplace for Local Deals &amp; Fair Swaps</string>
+    <string name="discovery_hero_subhead">Buy, sell, exchange and share items safely with verified neighbors nearby.</string>
+    <string name="discovery_hero_badge">Official FairSwap Local Hub</string>
+
+    <!-- How It Works Section -->
+    <string name="discovery_how_it_works_title">How FairSwap Works</string>
+    <string name="discovery_how_it_works_subtitle">Simple 4-step local trading in your neighborhood</string>
+    <string name="discovery_step1_title">1. Browse</string>
+    <string name="discovery_step1_desc">Find quality pre-owned goods, vehicles &amp; rentals nearby.</string>
+    <string name="discovery_step2_title">2. Connect</string>
+    <string name="discovery_step2_desc">Chat securely with sellers in real time without sharing phone numbers.</string>
+    <string name="discovery_step3_title">3. Inspect</string>
+    <string name="discovery_step3_desc">Meet in daylight at a public place to check the item thoroughly.</string>
+    <string name="discovery_step4_title">4. Exchange</string>
+    <string name="discovery_step4_desc">Pay on the spot after satisfaction. Zero advance fee or hidden charges.</string>
+
+    <!-- Indian Marketplace Safety Tips -->
+    <string name="discovery_safety_section_title">🛡️ Indian Marketplace Safety Guide</string>
+    <string name="discovery_safety_rule_upi_title">UPI Receiving Rule</string>
+    <string name="discovery_safety_rule_upi_desc">Receiving money via UPI NEVER requires entering your PIN, scanning a QR code, or approving a request.</string>
+    <string name="discovery_safety_rule_army_title">Fake Army Officer Scams</string>
+    <string name="discovery_safety_rule_army_desc">Beware of fraudsters posing as defence officers asking for advance shipping or booking tokens.</string>
+    <string name="discovery_safety_rule_courier_title">Fake Courier / Link Scams</string>
+    <string name="discovery_safety_rule_courier_desc">Never click external payment/courier links. Complete deals in person.</string>
+
+    <!-- Category Shortcuts -->
+    <string name="discovery_shortcut_mobiles">Mobiles</string>
+    <string name="discovery_shortcut_laptops">Laptops</string>
+    <string name="discovery_shortcut_bikes">Bikes</string>
+    <string name="discovery_shortcut_furniture">Furniture</string>
+    <string name="discovery_shortcut_fashion">Fashion</string>
+    <string name="discovery_shortcut_cars">Cars</string>
+    <string name="discovery_shortcut_all_categories">All Categories</string>
+
+    <!-- Location Selector -->
+    <string name="discovery_location_dialog_title">Select Location</string>
+    <string name="discovery_location_use_current">📍 Use Current Location</string>
+    <string name="discovery_location_all_india">🌐 All India (All Cities)</string>
+    <string name="discovery_location_select_city">Or Select Your City</string>
+    <string name="discovery_location_permission_denied">Location permission denied. Select city manually below.</string>
+    <string name="discovery_location_disabled">Location services disabled. Select city manually below.</string>
+    <string name="discovery_location_not_found">Unable to match city automatically. Select city manually below.</string>
 </resources>

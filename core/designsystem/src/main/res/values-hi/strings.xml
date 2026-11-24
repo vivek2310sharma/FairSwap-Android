@@ -169,6 +169,8 @@
     <string name="safety_advice_5">• साइबर अपराध/धोखाधड़ी की रिपोर्ट 1930 पर करें।</string>
     <string name="auth_browse_marketplace">मार्केटप्लेस ब्राउज़ करें</string>
     <string name="auth_fairswap_account">FairSwap खाता</string>
+    <string name="auth_join_community">फेयरस्वैप समुदाय से जुड़ें</string>
+    <string name="auth_welcome_desc">अपने फेयरस्वैप खाते तक पहुँचने और सभी मार्केटप्लेस सुविधाओं का आनंद लेने के लिए साइन इन करें।</string>
     <string name="notifications_title">नोटिफिकेशन्स</string>
     <string name="notifications_mark_all_read">सभी पढ़े हुए चिह्नित करें</string>
     <string name="notifications_empty">अभी तक कोई नोटिफिकेशन नहीं।</string>
@@ -182,4 +184,5 @@
     <string name="nav_sell">बेचें</string>
     <string name="nav_chats">चैट्स</string>
     <string name="nav_you">आप</string>
+    <string name="intro_skip">इंट्रो छोड़ें</string>
 </resources>
