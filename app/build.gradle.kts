@@ -130,17 +130,25 @@ androidComponents {
                 "Build error: SUPABASE_STAGING_URL must be a valid HTTPS URL."
             }
         } else {
-            val key = configValue("SUPABASE_PRODUCTION_PUBLISHABLE_KEY")
-            val url = configValue("SUPABASE_PRODUCTION_URL")
-            val webUrl = configValue("FAIRSWAP_PRODUCTION_WEB_BASE_URL")
-            check(key.isNotBlank()) {
-                "Build error: SUPABASE_PRODUCTION_PUBLISHABLE_KEY is required for production builds. Provide it in local.properties or via environment variables."
+            // Production credentials are required only when a production variant is
+            // explicitly requested. Staging CI, unit tests, lint, and IDE sync must
+            // not depend on production secrets being available.
+            val productionVariantRequested = gradle.startParameter.taskNames.any { taskName ->
+                taskName.contains("production", ignoreCase = true)
             }
-            check(url.startsWith("https://")) {
-                "Build error: SUPABASE_PRODUCTION_URL is required and must be a valid HTTPS URL for production builds."
-            }
-            check(webUrl.startsWith("https://")) {
-                "Build error: FAIRSWAP_PRODUCTION_WEB_BASE_URL is required and must be a valid HTTPS URL for production builds."
+            if (productionVariantRequested) {
+                val key = configValue("SUPABASE_PRODUCTION_PUBLISHABLE_KEY")
+                val url = configValue("SUPABASE_PRODUCTION_URL")
+                val webUrl = configValue("FAIRSWAP_PRODUCTION_WEB_BASE_URL")
+                check(key.isNotBlank()) {
+                    "Build error: SUPABASE_PRODUCTION_PUBLISHABLE_KEY is required for production builds. Provide it in local.properties or via environment variables."
+                }
+                check(url.startsWith("https://")) {
+                    "Build error: SUPABASE_PRODUCTION_URL is required and must be a valid HTTPS URL for production builds."
+                }
+                check(webUrl.startsWith("https://")) {
+                    "Build error: FAIRSWAP_PRODUCTION_WEB_BASE_URL is required and must be a valid HTTPS URL for production builds."
+                }
             }
         }
     }
